@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Status {
+  AUTO_REJECTED
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum AnnotationType {
+  CRUD
+  NUMBER
+  FORMATTING_COMMAND
+  SPELLED_OUT
+  NAMED_ENTITY
+  MEDICAL_TERM
+  MEASUREMENT
+}
+
+model AudioItem {
+  id                    String      @id @default(uuid())
+  filename              String      @unique
+  filePath              String
+  duration              Float
+  status                Status      @default(PENDING)
+  annotator             String?
+
+  sampleRate            Int?
+  channels              Int?
+  bitDepth              Int?
+  wordsPerMinute        Float?
+  distanceEstimate      Float?
+  isConditionOverridden Boolean     @default(false)
+
+  transcript            Transcript?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+}
+
+model Transcript {
+  id            String       @id @default(uuid())
+  audioItemId   String?      @unique
+  audioItem     AudioItem?   @relation(fields: [audioItemId], references: [id], onDelete: SetNull)
+  originalLabel String       @db.Text    
+  correctedText String       @db.Text    
+  annotations   Annotation[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model Annotation {
+  id           String         @id @default(uuid())
+  transcriptId String
+  transcript   Transcript     @relation(fields: [transcriptId], references: [id], onDelete: Cascade)
+  startOffset  Int            
+  endOffset    Int            
+  startTime    Float          
+  endTime      Float          
+  text         String         @db.Text
+  type         AnnotationType
+  attributes   Json
+}
