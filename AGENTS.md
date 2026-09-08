@@ -38,6 +38,22 @@ backend/
     schema.prisma      # Data model (AudioItem, Transcript, Annotation)
   uploads/             # Stored audio files (gitignored)
   .env                 # DATABASE_URL, PORT
+
+frontend/
+  public/              # Static assets (favicon, icons)
+  src/
+    components/        # Reusable UI components
+    composables/       # State management and utilities
+    layouts/           # Page layouts
+    pages/             # Route-level pages
+    router/            # Vue Router config
+    services/          # API client
+    types/             # Shared TypeScript types
+  index.html           # Vite HTML entry
+  package.json         # Dependencies and scripts
+  vite.config.ts       # Vite config with @ alias and dev proxy
+  tsconfig.json        # TypeScript config
+  env.d.ts             # Vite client types
 ```
 
 ## Build & Run
@@ -55,6 +71,13 @@ docker compose up -d          # Start PostgreSQL
 yarn prisma migrate dev       # Run migrations
 yarn prisma generate          # Generate Prisma client
 yarn dev                      # Start dev server on port 3000
+```
+
+### Frontend
+```bash
+cd frontend
+yarn install
+yarn dev                      # Start dev server on port 5173
 ```
 
 ### Database
@@ -75,6 +98,15 @@ docker compose down -v        # Stop and remove volumes
 - Routes → Controllers → Services → Repositories layered architecture
 - File uploads stored in `uploads/` directory (referenced in DB, not bytes)
 
+### Frontend
+- Vue 3 Composition API with `<script setup lang="ts">` — all components
+- `@/` alias for all intra-project imports (configured in vite.config.ts and tsconfig)
+- No Pinia/Vuex — singleton composables for cross-component state, instance-scoped composables for local state
+- Tailwind CSS v4 utility classes in templates (single `@import "tailwindcss"` in style.css)
+- `import type` for type-only imports
+- Native `fetch` via centralized `api.ts` service (generic typed methods)
+- Centralized types in `types/index.ts`
+
 ### Naming
 - Backend files: kebab-case (e.g., `audio.routes.ts`)
 - Prisma models: PascalCase (e.g., `AudioItem`)
@@ -87,3 +119,6 @@ The data model is defined in `backend/prisma/schema.prisma`.
 ## Design Decisions
 
 - **Duration from audio header:** Server reads duration using `music-metadata`. Client-sent duration is not trusted.
+- **Singleton composables over store library:** Only two pieces of cross-component state (work queue, audio player). Module-scope refs provide shared-state semantics without the overhead of a store library.
+- **Inline modals over Teleport:** At most one modal open at a time. `fixed inset-0 z-50` overlays within the owning component keep the DOM simple and avoid event inheritance issues.
+- **WaveSurfer.js composable separation:** Audio playback state and controls live in `useAudioPlayer.ts` (singleton), while DOM integration lives in `AudioPlayer.vue`. The WaveSurfer instance is held in a `shallowRef` to avoid deep reactivity on a complex external object.
