@@ -1,6 +1,8 @@
-import { parseFile } from 'music-metadata';
+import { parseBuffer } from 'music-metadata';
 import { prisma } from '../lib/prisma.js';
-import { unlink } from 'node:fs/promises';
+import { writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { config } from '../config.js';
 
 const ALLOWED_EXTENSIONS = ['.wav', '.mp3', '.m4a'];
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
@@ -37,13 +39,13 @@ function validateFile(file: Express.Multer.File): {
   return { valid: true };
 }
 
-async function extractMetadata(filePath: string): Promise<{
+async function extractMetadata(buffer: Buffer, mimeType: string): Promise<{
   duration: number;
   sampleRate: number;
   channels: number;
   bitDepth: number | null;
 }> {
-  const metadata = await parseFile(filePath);
+  const metadata = await parseBuffer(buffer, { mimeType });
   const format = metadata.format;
 
   return {
@@ -88,7 +90,6 @@ export async function processUnifiedUpload(
     const validation = validateFile(file);
     if (!validation.valid) {
       errors.push(validation.error!);
-      await unlink(file.path).catch(() => {});
       continue;
     }
 
@@ -100,18 +101,20 @@ export async function processUnifiedUpload(
     }
 
     try {
-      const meta = await extractMetadata(file.path);
+      const meta = await extractMetadata(file.buffer, file.mimetype);
 
       if (meta.duration < AUTO_REJECT_THRESHOLD) {
         errors.push(`${filename}: duration too short`);
-        await unlink(file.path).catch(() => {});
         continue;
       }
+
+      const filePath = join(config.uploadDir, filename);
+      await writeFile(filePath, file.buffer);
 
       const audioItem = await prisma.audioItem.create({
         data: {
           filename,
-          filePath: file.path,
+          filePath,
           duration: meta.duration,
           status: 'PENDING',
           sampleRate: meta.sampleRate,
@@ -125,7 +128,6 @@ export async function processUnifiedUpload(
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       errors.push(`${filename}: ${message}`);
-      await unlink(file.path).catch(() => {});
     }
   }
 
