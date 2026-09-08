@@ -9,7 +9,8 @@
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "lint": "eslint src/",
-    "lint:fix": "eslint src/ --fix"
+    "lint:fix": "eslint src/ --fix",
+    "test": "vitest run"
   },
   "dependencies": {
     "@prisma/client": "6",
@@ -25,11 +26,15 @@
     "@types/express": "^5.0.6",
     "@types/multer": "^2.2.0",
     "@types/node": "^26.4.1",
+    "@types/supertest": "^7.2.1",
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
     "prisma": "6",
+    "supertest": "^7.2.2",
     "tsx": "^4.23.13",
     "typescript": "6",
-    "typescript-eslint": "^8.69.0"
+    "typescript-eslint": "^8.69.0",
+    "vite": "^8.2.2",
+    "vitest": "^5.0.0"
   }
 }

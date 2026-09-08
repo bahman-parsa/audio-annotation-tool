@@ -96,23 +96,24 @@ export async function processUnifiedUpload(
 
     if (await checkDuplicate(filename)) {
       errors.push(`${filename}: duplicate file`);
-      await unlink(file.path).catch(() => {});
       continue;
     }
 
     try {
       const meta = await extractMetadata(file.path);
-      const status =
-        meta.duration <= AUTO_REJECT_THRESHOLD
-          ? ('AUTO_REJECTED' as const)
-          : ('PENDING' as const);
+
+      if (meta.duration < AUTO_REJECT_THRESHOLD) {
+        errors.push(`${filename}: duration too short`);
+        await unlink(file.path).catch(() => {});
+        continue;
+      }
 
       const audioItem = await prisma.audioItem.create({
         data: {
           filename,
           filePath: file.path,
           duration: meta.duration,
-          status,
+          status: 'PENDING',
           sampleRate: meta.sampleRate,
           channels: meta.channels,
           bitDepth: meta.bitDepth,
@@ -182,6 +183,7 @@ export async function processUnifiedUpload(
       }
 
       if (!audioItemId) {
+        errors.push(`${filename}: please add related audio to the transcript`);
         unmatched.push(path);
         continue;
       }
