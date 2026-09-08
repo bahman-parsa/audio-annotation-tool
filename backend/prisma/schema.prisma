@@ -48,6 +48,7 @@ model Transcript {
   id            String       @id @default(uuid())
   audioItemId   String?      @unique
   audioItem     AudioItem?   @relation(fields: [audioItemId], references: [id], onDelete: SetNull)
+  rawPath       String?      @db.Text
   originalLabel String       @db.Text    
   correctedText String       @db.Text    
   annotations   Annotation[]
