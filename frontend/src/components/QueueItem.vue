@@ -25,8 +25,8 @@ function formatDuration(seconds: number): string {
 function statusColor(status: string) {
   const colors: Record<string, string> = {
     PENDING: 'bg-yellow-100 text-yellow-800',
-    IN_PROGRESS: 'bg-blue-100 text-blue-800',
-    COMPLETED: 'bg-green-100 text-green-800',
+    UNTOUCHED: 'bg-blue-100 text-blue-800',
+    READY: 'bg-green-100 text-green-800',
   };
   return colors[status] ?? 'bg-gray-100 text-gray-800';
 }
@@ -34,8 +34,8 @@ function statusColor(status: string) {
 function statusIcon(status: string) {
   const icons: Record<string, string> = {
     PENDING: '\u25CB',
-    IN_PROGRESS: '\u25C9',
-    COMPLETED: '\u25CF',
+    UNTOUCHED: '\u25C9',
+    READY: '\u25CF',
   };
   return icons[status] ?? '?';
 }

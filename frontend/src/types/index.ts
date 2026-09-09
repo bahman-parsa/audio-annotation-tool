@@ -1,4 +1,4 @@
-export type Status = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
+export type Status = 'PENDING' | 'UNTOUCHED' | 'READY';
 
 export type AnnotationType = 'update' | 'delete' | 'number';
 

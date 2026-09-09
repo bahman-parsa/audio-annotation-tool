@@ -39,7 +39,10 @@ function validateFile(file: Express.Multer.File): {
   return { valid: true };
 }
 
-async function extractMetadata(buffer: Buffer, mimeType: string): Promise<{
+async function extractMetadata(
+  buffer: Buffer,
+  mimeType: string,
+): Promise<{
   duration: number;
   sampleRate: number;
   channels: number;
@@ -214,6 +217,11 @@ export async function processUnifiedUpload(
           },
         });
       }
+
+      await prisma.audioItem.update({
+        where: { id: audioItemId },
+        data: { status: 'UNTOUCHED' },
+      });
 
       matched++;
     }

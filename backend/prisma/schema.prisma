@@ -8,10 +8,9 @@ datasource db {
 }
 
 enum Status {
-  AUTO_REJECTED
   PENDING
-  IN_PROGRESS
-  COMPLETED
+  UNTOUCHED
+  READY
 }
 
 enum AnnotationType {

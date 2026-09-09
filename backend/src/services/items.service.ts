@@ -32,7 +32,7 @@ export async function createTranscript(
     throw new Error('Audio item already has a transcript');
   }
 
-  return prisma.transcript.create({
+  const transcript = await prisma.transcript.create({
     data: {
       audioItemId,
       originalLabel,
@@ -41,6 +41,13 @@ export async function createTranscript(
     },
     include: { annotations: true },
   });
+
+  await prisma.audioItem.update({
+    where: { id: audioItemId },
+    data: { status: 'UNTOUCHED' },
+  });
+
+  return transcript;
 }
 
 export async function updateTranscript(
@@ -96,10 +103,11 @@ export async function updateTranscript(
     });
   }
 
-  if (audioItem.status === 'PENDING') {
+  const newStatus = annotations.length > 0 ? 'READY' : 'UNTOUCHED';
+  if (audioItem.status !== newStatus) {
     await prisma.audioItem.update({
       where: { id: audioItemId },
-      data: { status: 'IN_PROGRESS' },
+      data: { status: newStatus },
     });
   }
 
