@@ -106,7 +106,9 @@ async function handleExport() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'export.jsonl';
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    a.download = `export_${pad(now.getDate())}-${pad(now.getMonth() + 1)}-${now.getFullYear()}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}.jsonl`;
     a.click();
     URL.revokeObjectURL(url);
   } catch (err) {
