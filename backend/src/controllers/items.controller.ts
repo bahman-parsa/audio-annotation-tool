@@ -4,6 +4,7 @@ import {
   getAllItems,
   createTranscript,
   updateTranscript,
+  replaceTranscript,
 } from '../services/items.service.js';
 
 export async function getItems(_req: Request, res: Response): Promise<void> {
@@ -80,6 +81,32 @@ export async function updateItemTranscript(
         attributes: Record<string, unknown>;
       }>,
     );
+    res.json({ item });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (message.includes('not found')) {
+      res.status(404).json({ error: message });
+    } else {
+      res.status(500).json({ error: message });
+    }
+  }
+}
+
+export async function replaceItemTranscript(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const id = req.params.id as string;
+  const body = req.body as Record<string, unknown>;
+  const originalLabel = body.originalLabel;
+
+  if (typeof originalLabel !== 'string' || !originalLabel) {
+    res.status(400).json({ error: 'originalLabel must be a non-empty string' });
+    return;
+  }
+
+  try {
+    const item = await replaceTranscript(id, originalLabel);
     res.json({ item });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
