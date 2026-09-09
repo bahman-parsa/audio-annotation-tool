@@ -1,6 +1,6 @@
 export type Status = 'PENDING' | 'UNTOUCHED' | 'READY';
 
-export type AnnotationType = 'update' | 'delete' | 'number';
+export type AnnotationType = 'CRUD' | 'NUMBER';
 
 export type { Annotation } from '@/lib/transcript-annotator'
 

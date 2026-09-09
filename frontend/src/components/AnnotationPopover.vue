@@ -30,17 +30,17 @@ function handleSave() {
       : normalizedValue.value
     if (rendering.value === 'digits' && isNaN(val as number)) return
     emit('save', {
-      type: 'number',
+      type: 'NUMBER',
       attributes: { rendering: rendering.value, normalizedValue: val },
     })
   } else {
     if (crudMode.value === 'delete') {
-      emit('save', { type: 'delete', attributes: {} })
+      emit('save', { type: 'CRUD', attributes: { mode: 'delete' } })
     } else {
       if (!newText.value.trim()) return
       emit('save', {
-        type: 'update',
-        attributes: { normalizedValue: newText.value.trim() },
+        type: 'CRUD',
+        attributes: { mode: 'update', normalizedValue: newText.value.trim() },
       })
     }
   }

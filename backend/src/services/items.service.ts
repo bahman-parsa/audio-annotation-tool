@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, type AnnotationType } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 
 export async function getAllItems() {
@@ -61,7 +61,7 @@ export async function updateTranscript(
     startTime: number;
     endTime: number;
     text: string;
-    type: string;
+    type: AnnotationType;
     attributes: Record<string, unknown>;
   }>,
 ) {
@@ -97,7 +97,7 @@ export async function updateTranscript(
         startTime: a.startTime,
         endTime: a.endTime,
         text: a.text,
-        type: a.type as never,
+        type: a.type,
         attributes: a.attributes as Prisma.InputJsonValue,
       })),
     });

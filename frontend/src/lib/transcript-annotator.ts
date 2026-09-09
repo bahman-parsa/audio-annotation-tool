@@ -4,8 +4,10 @@ export interface Annotation {
   id: string;
   startOffset: number;
   endOffset: number;
+  startTime: number;
+  endTime: number;
   text: string;
-  type: 'update' | 'delete' | 'number';
+  type: 'CRUD' | 'NUMBER';
   attributes: Record<string, unknown>;
 }
 
@@ -69,7 +71,12 @@ export class TranscriptAnnotator {
   }
 
   addAnnotation(data: Omit<Annotation, 'id'>): Annotation {
-    const annotation: Annotation = { ...data, id: generateId() };
+    const annotation: Annotation = {
+      startTime: 0,
+      endTime: 0,
+      ...data,
+      id: generateId(),
+    };
     this.annotations.push(annotation);
     return annotation;
   }
@@ -82,7 +89,7 @@ export class TranscriptAnnotator {
     if (this.annotations.length === 0) return this.originalText;
 
     const sorted = [...this.annotations]
-      .filter((a) => a.type === 'update' || a.type === 'delete')
+      .filter((a) => a.type === 'CRUD')
       .sort((a, b) => b.startOffset - a.startOffset);
 
     let result = this.originalText;
@@ -91,9 +98,9 @@ export class TranscriptAnnotator {
       const before = result.slice(0, ann.startOffset);
       const after = result.slice(ann.endOffset);
 
-      if (ann.type === 'delete') {
+      if (ann.attributes.mode === 'delete') {
         result = before + after;
-      } else if (ann.type === 'update') {
+      } else if (ann.attributes.mode === 'update') {
         const replacement = (ann.attributes.normalizedValue as string) ?? '';
         result = before + replacement + after;
       }
@@ -125,17 +132,17 @@ export class TranscriptAnnotator {
 
       const ann = overlapping[0];
 
-      if (ann.type === 'number') {
+      if (ann.type === 'NUMBER') {
         const rendering = (ann.attributes.rendering as string) ?? 'digits';
         const value = ann.attributes.normalizedValue ?? '';
         parts.push(
           `<span class="word word--number" data-id="${ann.id}" data-start="${token.start}" data-rendering="${escapeHtml(rendering)}" data-value="${escapeHtml(String(value))}">${escapeHtml(token.text)}</span>`,
         );
-      } else if (ann.type === 'delete') {
+      } else if (ann.type === 'CRUD' && ann.attributes.mode === 'delete') {
         parts.push(
           `<span class="word word--deleted" data-id="${ann.id}" data-start="${token.start}"><s>${escapeHtml(token.text)}</s></span>`,
         );
-      } else if (ann.type === 'update') {
+      } else if (ann.type === 'CRUD' && ann.attributes.mode === 'update') {
         const newText = (ann.attributes.normalizedValue as string) ?? '';
         parts.push(
           `<span class="word word--updated" data-id="${ann.id}" data-start="${token.start}"><s>${escapeHtml(token.text)}</s> <span class="word--new">${escapeHtml(newText)}</span></span>`,
