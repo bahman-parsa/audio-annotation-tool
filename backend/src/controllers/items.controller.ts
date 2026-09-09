@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import type { AnnotationType } from '@prisma/client';
 import {
   getAllItems,
   createTranscript,
@@ -75,7 +76,7 @@ export async function updateItemTranscript(
         startTime: number;
         endTime: number;
         text: string;
-        type: string;
+        type: AnnotationType;
         attributes: Record<string, unknown>;
       }>,
     );

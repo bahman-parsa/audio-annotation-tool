@@ -106,7 +106,7 @@ async function handleExport() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'gold-standard.jsonl';
+    a.download = 'export.jsonl';
     a.click();
     URL.revokeObjectURL(url);
   } catch (err) {
