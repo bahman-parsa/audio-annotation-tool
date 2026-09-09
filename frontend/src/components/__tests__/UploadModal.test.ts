@@ -19,12 +19,12 @@ describe('UploadModal', () => {
     vi.restoreAllMocks()
   })
 
-  it('renders the upload form with file input, textarea, and upload button', () => {
+  it('renders the upload form with file inputs and upload button', () => {
     const wrapper = mount(UploadModal)
 
     expect(wrapper.find('h2').text()).toBe('Upload Audio & Transcripts')
-    expect(wrapper.find('input[type="file"]').exists()).toBe(true)
-    expect(wrapper.find('textarea').exists()).toBe(true)
+    const fileInputs = wrapper.findAll('input[type="file"]')
+    expect(fileInputs.length).toBe(2)
     const uploadButton = wrapper.findAll('button').find((b) => b.text().includes('Upload'))
     expect(uploadButton).toBeDefined()
   })
@@ -36,7 +36,7 @@ describe('UploadModal', () => {
     expect(uploadButton!.attributes('disabled')).toBeDefined()
   })
 
-  it('shows file count after files are selected', async () => {
+  it('shows file names after files are selected', async () => {
     const wrapper = mount(UploadModal)
 
     const fileInput = wrapper.find('input[type="file"]')
@@ -51,7 +51,8 @@ describe('UploadModal', () => {
     })
     await fileInput.trigger('change')
 
-    expect(wrapper.text()).toContain('2 file(s) selected')
+    expect(wrapper.text()).toContain('audio1.wav')
+    expect(wrapper.text()).toContain('audio2.wav')
   })
 
   it('calls api.upload with correct FormData on submit', async () => {

@@ -8,18 +8,88 @@ const emit = defineEmits<{
 }>()
 
 const uploadStatus = ref('')
-const jsonInput = ref('')
 const selectedFiles = ref<File[]>([])
+const transcriptFile = ref<File | null>(null)
+const transcriptJson = ref('')
+const transcriptError = ref('')
+const audioInput = ref<HTMLInputElement | null>(null)
+const transcriptInput = ref<HTMLInputElement | null>(null)
+
+function triggerAudioInput() {
+  audioInput.value?.click()
+}
+
+function triggerTranscriptInput() {
+  transcriptInput.value?.click()
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
 
 function handleFileSelect(e: Event) {
   const input = e.target as HTMLInputElement
   if (input.files) {
-    selectedFiles.value = Array.from(input.files)
+    selectedFiles.value = [...selectedFiles.value, ...Array.from(input.files)]
   }
+  input.value = ''
+}
+
+function removeFile(index: number) {
+  selectedFiles.value = selectedFiles.value.filter((_, i) => i !== index)
+}
+
+function handleTranscriptFileSelect(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  transcriptError.value = ''
+  transcriptJson.value = ''
+
+  const reader = new FileReader()
+  reader.onload = () => {
+    const text = reader.result as string
+    try {
+      const parsed = JSON.parse(text)
+      const items = Array.isArray(parsed) ? parsed : [parsed]
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i]
+        if (!item || typeof item !== 'object') {
+          transcriptError.value = `Item at index ${i} is not an object`
+          return
+        }
+        if (typeof item.path !== 'string' || !item.path) {
+          transcriptError.value = `Item at index ${i} is missing or invalid "path"`
+          return
+        }
+        if (typeof item.label !== 'string' || !item.label) {
+          transcriptError.value = `Item at index ${i} is missing or invalid "label"`
+          return
+        }
+      }
+
+      transcriptFile.value = file
+      transcriptJson.value = JSON.stringify(items)
+    } catch {
+      transcriptError.value = 'Invalid JSON file'
+    }
+  }
+  reader.readAsText(file)
+  input.value = ''
+}
+
+function clearTranscript() {
+  transcriptFile.value = null
+  transcriptJson.value = ''
+  transcriptError.value = ''
 }
 
 async function handleUpload() {
-  if (selectedFiles.value.length === 0 && !jsonInput.value.trim()) return
+  if (selectedFiles.value.length === 0 && !transcriptJson.value) return
 
   uploadStatus.value = 'Uploading...'
   const formData = new FormData()
@@ -28,8 +98,8 @@ async function handleUpload() {
     formData.append('files', file)
   }
 
-  if (jsonInput.value.trim()) {
-    formData.append('transcripts', jsonInput.value)
+  if (transcriptJson.value) {
+    formData.append('transcripts', transcriptJson.value)
   }
 
   try {
@@ -72,28 +142,39 @@ async function handleUpload() {
       <div class="p-4 space-y-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Audio Files</label>
-          <div class="border-2 border-dashed rounded-lg p-6 text-center">
+          <div class="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer" @click="triggerAudioInput">
             <p class="text-gray-500 mb-2">Select .wav, .mp3, or .m4a files</p>
-            <input type="file" multiple accept=".wav,.mp3,.m4a" @change="handleFileSelect" class="block mx-auto" />
+            <input ref="audioInput" type="file" multiple accept=".wav,.mp3,.m4a" @change="handleFileSelect" class="sr-only" />
           </div>
-          <div v-if="selectedFiles.length > 0" class="text-sm text-gray-600 mt-1">
-            {{ selectedFiles.length }} file(s) selected
+          <div v-if="selectedFiles.length > 0" class="mt-2 space-y-1">
+            <div v-for="(file, index) in selectedFiles" :key="index" class="flex items-center justify-between text-sm bg-gray-50 rounded px-3 py-1.5">
+              <span class="truncate text-gray-700">{{ file.name }}</span>
+              <div class="flex items-center gap-2 shrink-0 ml-2">
+                <span class="text-gray-400 text-xs">{{ formatFileSize(file.size) }}</span>
+                <button class="text-red-400 hover:text-red-600 text-xs" @click="removeFile(index)">&#10005;</button>
+              </div>
+            </div>
           </div>
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Transcript JSON (optional)</label>
-          <textarea
-            v-model="jsonInput"
-            rows="6"
-            class="w-full px-3 py-2 border rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder='[{"path": "audio/file.wav", "label": "Transcript text..."}]'
-          />
+          <label class="block text-sm font-medium text-gray-700 mb-1">Transcript JSON File (optional)</label>
+          <div class="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer" @click="triggerTranscriptInput">
+            <p class="text-gray-500 mb-2">Select a .json file</p>
+            <input ref="transcriptInput" type="file" accept=".json" @change="handleTranscriptFileSelect" class="sr-only" />
+          </div>
+          <div v-if="transcriptFile" class="mt-2 flex items-center justify-between text-sm bg-gray-50 rounded px-3 py-1.5">
+            <span class="truncate text-gray-700">{{ transcriptFile.name }}</span>
+            <button class="text-red-400 hover:text-red-600 text-xs shrink-0 ml-2" @click="clearTranscript">&#10005;</button>
+          </div>
+          <div v-if="transcriptError" class="mt-2 text-sm text-red-600">
+            {{ transcriptError }}
+          </div>
         </div>
 
         <button
           class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
-          :disabled="selectedFiles.length === 0 && !jsonInput.trim()"
+          :disabled="selectedFiles.length === 0 && !transcriptJson"
           @click="handleUpload"
         >
           Upload
