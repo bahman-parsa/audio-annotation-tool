@@ -220,7 +220,7 @@ export async function processUnifiedUpload(
 
       await prisma.audioItem.update({
         where: { id: audioItemId },
-        data: { status: 'UNTOUCHED' },
+        data: { status: 'NEW' },
       });
 
       matched++;

@@ -44,7 +44,7 @@ export async function createTranscript(
 
   await prisma.audioItem.update({
     where: { id: audioItemId },
-    data: { status: 'UNTOUCHED' },
+    data: { status: 'NEW' },
   });
 
   return transcript;
@@ -103,7 +103,7 @@ export async function updateTranscript(
     });
   }
 
-  const newStatus = annotations.length > 0 ? 'READY' : 'UNTOUCHED';
+  const newStatus = annotations.length > 0 ? 'READY' : 'NEW';
   if (audioItem.status !== newStatus) {
     await prisma.audioItem.update({
       where: { id: audioItemId },

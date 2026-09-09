@@ -1,4 +1,4 @@
-export type Status = 'PENDING' | 'UNTOUCHED' | 'READY';
+export type Status = 'PENDING' | 'NEW' | 'READY';
 
 export type AnnotationType = 'CRUD' | 'NUMBER';
 

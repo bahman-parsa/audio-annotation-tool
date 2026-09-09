@@ -14,7 +14,7 @@ const emit = defineEmits<{
 
 const { searchQuery, statusFilter } = useWorkQueue();
 
-const statuses = ['ALL', 'PENDING', 'UNTOUCHED', 'READY'] as const;
+const statuses = ['ALL', 'PENDING', 'NEW', 'READY'] as const;
 </script>
 
 <template>
