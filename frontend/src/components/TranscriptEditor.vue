@@ -1,18 +1,15 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { Annotation, WordTiming, TextSelection } from '@/types'
+import { TranscriptAnnotator } from '@/lib/transcript-annotator'
+import type { Annotation } from '@/types'
 
 const props = defineProps<{
-  original: string
-  corrected: string
+  originalText: string
   annotations: Annotation[]
-  currentTime: number
-  wordTimings: WordTiming[]
 }>()
 
 const emit = defineEmits<{
-  'update:corrected': [text: string]
-  'annotate': [selection: TextSelection]
+  'annotate': [data: { text: string; startOffset: number; endOffset: number }]
   'delete-annotation': [id: string]
 }>()
 
@@ -33,93 +30,44 @@ function syncScroll(source: 'original' | 'corrected') {
   requestAnimationFrame(() => { isSyncing = false })
 }
 
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
+const annotator = computed(() =>
+  new TranscriptAnnotator(props.originalText, props.annotations)
+)
+
+const renderedHTML = computed(() => annotator.value.renderAnnotatedHTML())
+
+function findAnnotatedWord(target: HTMLElement): { id?: string; start?: number; end?: number } {
+  let el: HTMLElement | null = target
+  while (el && correctedPanel.value && !el.classList?.contains('word')) {
+    if (el === correctedPanel.value) return {}
+    el = el.parentElement
+  }
+  if (!el) return {}
+  const id = el.getAttribute('data-id') ?? undefined
+  const start = parseInt(el.getAttribute('data-start') ?? '-1', 10)
+  return { id, start }
 }
 
-interface Segment {
-  text: string
-  startOffset: number
-  endOffset: number
-  annotationIds: string[]
-  annotationTypes: string[]
-}
+function handleWordDblClick(e: MouseEvent) {
+  const target = e.target as HTMLElement
+  const { start } = findAnnotatedWord(target)
+  if (start < 0) return
 
-const renderedCorrected = computed(() => {
-  if (props.annotations.length === 0) return escapeHtml(props.corrected)
-
-  const boundaries = new Set<number>()
-  boundaries.add(0)
-  boundaries.add(props.corrected.length)
-  for (const ann of props.annotations) {
-    boundaries.add(ann.startOffset)
-    boundaries.add(ann.endOffset)
-  }
-  const sorted = Array.from(boundaries).sort((a, b) => a - b)
-
-  const segments: Segment[] = []
-  for (let i = 0; i < sorted.length - 1; i++) {
-    const start = sorted[i]
-    const end = sorted[i + 1]
-    if (start === end) continue
-    const covering = props.annotations.filter(a => a.startOffset <= start && a.endOffset >= end)
-    segments.push({
-      text: props.corrected.slice(start, end),
-      startOffset: start,
-      endOffset: end,
-      annotationIds: covering.map(a => a.id),
-      annotationTypes: covering.map(a => a.type),
-    })
-  }
-
-  return segments.map(seg => {
-    const escaped = escapeHtml(seg.text)
-    if (seg.annotationIds.length === 0) return escaped
-    const classes = seg.annotationTypes.map(t => `annotation-${t.toLowerCase()}`).join(' ')
-    return `<span class="annotation ${classes}" data-id="${seg.annotationIds.join(',')}">${escaped}</span>`
-  }).join('')
-})
-
-function handleTextSelection() {
-  const selection = window.getSelection()
-  if (!selection || selection.isCollapsed) return
-
-  const text = selection.toString().trim()
-  if (!text) return
-
-  const range = selection.getRangeAt(0)
-  const correctedDiv = correctedPanel.value
-  if (!correctedDiv) return
-
-  const preRange = document.createRange()
-  preRange.selectNodeContents(correctedDiv)
-  preRange.setEnd(range.startContainer, range.startOffset)
-  const preText = preRange.toString()
+  const word = target.textContent?.trim() ?? ''
+  if (!word) return
 
   emit('annotate', {
-    text,
-    startOffset: preText.length,
-    endOffset: preText.length + text.length,
+    text: word,
+    startOffset: start,
+    endOffset: start + word.length,
   })
-
-  selection.removeAllRanges()
 }
 
-function handleInput(e: Event) {
-  const div = e.target as HTMLDivElement
-  emit('update:corrected', div.textContent ?? '')
-}
-
-function handleAnnotationClick(e: MouseEvent) {
+function handleWordClick(e: MouseEvent) {
   const target = e.target as HTMLElement
-  const span = target.closest('.annotation')
-  if (!span) return
-  const id = span.getAttribute('data-id')
+  const { id } = findAnnotatedWord(target)
   if (id) {
-    id.split(',').forEach(annotationId => emit('delete-annotation', annotationId))
+    emit('delete-annotation', id)
   }
 }
 </script>
@@ -134,7 +82,7 @@ function handleAnnotationClick(e: MouseEvent) {
         @scroll="syncScroll('original')"
       >
         <div class="panel-header">AI Original (Immutable)</div>
-        <div class="panel-content original-content">{{ original }}</div>
+        <div class="panel-content original-content">{{ originalText }}</div>
       </div>
       <div
         ref="correctedPanel"
@@ -144,11 +92,9 @@ function handleAnnotationClick(e: MouseEvent) {
         <div class="panel-header">Corrected (Editable + Annotatable)</div>
         <div
           class="panel-content corrected-content"
-          contenteditable="true"
-          @mouseup="handleTextSelection"
-          @input="handleInput"
-          @click="handleAnnotationClick"
-          v-html="renderedCorrected"
+          v-html="renderedHTML"
+          @dblclick="handleWordDblClick"
+          @click="handleWordClick"
         />
       </div>
     </div>
@@ -203,16 +149,30 @@ function handleAnnotationClick(e: MouseEvent) {
   cursor: text;
 }
 
-:deep(.annotation) {
-  padding: 0.125rem 0.25rem;
-  border-radius: 0.25rem;
-  cursor: pointer;
+:deep(.word) {
   position: relative;
-  border-bottom: 2px solid;
+  cursor: pointer;
 }
 
-:deep(.annotation-number) { background: #dbeafe; border-color: #3b82f6; }
-:deep(.annotation-formatting_command) { background: #e0e7ff; border-color: #6366f1; }
-:deep(.annotation-medical_term) { background: #fce7f3; border-color: #ec4899; }
-:deep(.annotation-measurement) { background: #d1fae5; border-color: #10b981; }
+:deep(.word--deleted s) {
+  color: #dc2626;
+  text-decoration: line-through;
+}
+
+:deep(.word--updated s) {
+  color: #9ca3af;
+  text-decoration: line-through;
+}
+
+:deep(.word--new) {
+  color: #059669;
+  font-weight: 600;
+}
+
+:deep(.word--number) {
+  background: #dbeafe;
+  border-bottom: 2px solid #3b82f6;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+}
 </style>

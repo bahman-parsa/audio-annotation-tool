@@ -1,12 +1,8 @@
 export type Status = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
 
-export type AnnotationType =
-  | 'NUMBER'
-  | 'FORMATTING_COMMAND'
-  | 'SPELLED_OUT'
-  | 'NAMED_ENTITY'
-  | 'MEDICAL_TERM'
-  | 'MEASUREMENT';
+export type AnnotationType = 'update' | 'delete' | 'number';
+
+export type { Annotation } from '@/lib/transcript-annotator'
 
 export interface AudioItem {
   id: string;
@@ -32,19 +28,9 @@ export interface Transcript {
   originalLabel: string;
   correctedText: string;
   rawPath: string | null;
-  annotations: Annotation[];
+  annotations: unknown[];
   createdAt: string;
   updatedAt: string;
-}
-
-export interface Annotation {
-  id: string;
-  transcriptId: string;
-  startOffset: number;
-  endOffset: number;
-  text: string;
-  type: AnnotationType;
-  attributes: Record<string, unknown>;
 }
 
 export interface WordTiming {

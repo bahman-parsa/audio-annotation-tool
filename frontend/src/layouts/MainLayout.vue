@@ -1,108 +1,123 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import TopBar from '@/components/TopBar.vue'
-import WorkQueue from '@/components/WorkQueue.vue'
-import RecordingMetadata from '@/components/RecordingMetadata.vue'
-import AudioPlayer from '@/components/AudioPlayer.vue'
-import TranscriptEditor from '@/components/TranscriptEditor.vue'
-import ActionFooter from '@/components/ActionFooter.vue'
-import UploadModal from '@/components/UploadModal.vue'
-import AnnotationPopover from '@/components/AnnotationPopover.vue'
-import { useWorkQueue } from '@/composables/useWorkQueue'
-import { useAnnotations } from '@/composables/useAnnotations'
-import { useWordTimestamps } from '@/composables/useWordTimestamps'
-import type { TextSelection, Annotation, AnnotationType } from '@/types'
-import { api } from '@/services/api'
+import { ref, onMounted } from 'vue';
+import TopBar from '@/components/TopBar.vue';
+import WorkQueue from '@/components/WorkQueue.vue';
+import RecordingMetadata from '@/components/RecordingMetadata.vue';
+import AudioPlayer from '@/components/AudioPlayer.vue';
+import TranscriptEditor from '@/components/TranscriptEditor.vue';
+import ActionFooter from '@/components/ActionFooter.vue';
+import UploadModal from '@/components/UploadModal.vue';
+import AnnotationPopover from '@/components/AnnotationPopover.vue';
+import { useWorkQueue } from '@/composables/useWorkQueue';
+import { useWordTimestamps } from '@/composables/useWordTimestamps';
+import { TranscriptAnnotator } from '@/lib/transcript-annotator';
+import type { Annotation, AnnotationType } from '@/types';
+import { api } from '@/services/api';
 
-const { filteredItems, selectedItem, selectedId, selectItem, setItems } = useWorkQueue()
-const { annotations, setAnnotations, addAnnotation, removeAnnotation } = useAnnotations()
-const { estimate } = useWordTimestamps()
+const { filteredItems, selectedItem, selectedId, selectItem, setItems } =
+  useWorkQueue();
+const { estimate } = useWordTimestamps();
 
-const showUploadModal = ref(false)
-const showAnnotationPopover = ref(false)
-const textSelection = ref<TextSelection | null>(null)
-const currentTime = ref(0)
-const correctedText = ref('')
-const wordTimings = ref<ReturnType<typeof estimate>>([])
+const showUploadModal = ref(false);
+const showAnnotationPopover = ref(false);
+const popoverWord = ref('');
+const popoverStartOffset = ref(0);
+const popoverEndOffset = ref(0);
+const currentTime = ref(0);
+const wordTimings = ref<ReturnType<typeof estimate>>([]);
+
+const annotator = ref<TranscriptAnnotator | null>(null);
+const annotations = ref<Annotation[]>([]);
 
 onMounted(async () => {
   try {
-    const data = await api.get<{ items: unknown[] }>('/api/items')
-    setItems(data.items as any[])
+    const data = await api.get<{ items: unknown[] }>('/api/items');
+    setItems(data.items as any[]);
   } catch {
-    setItems([])
+    setItems([]);
   }
-})
+});
 
 function selectQueueItem(id: string) {
-  selectItem(id)
-  const item = selectedItem.value
+  selectItem(id);
+  const item = selectedItem.value;
   if (item?.transcript) {
-    correctedText.value = item.transcript.correctedText || item.transcript.originalLabel
-    setAnnotations(item.transcript.annotations)
-    wordTimings.value = estimate(correctedText.value, item.duration)
+    annotator.value = new TranscriptAnnotator(
+      item.transcript.originalLabel,
+      item.transcript.annotations as Annotation[],
+    );
+    annotations.value = annotator.value.getAnnotations();
+    wordTimings.value = estimate(item.transcript.originalLabel, item.duration);
   }
 }
 
 function onTimeUpdate(time: number) {
-  currentTime.value = time
+  currentTime.value = time;
 }
 
-function onCorrectedUpdate(text: string) {
-  correctedText.value = text
+function openAnnotationPopover(data: {
+  text: string;
+  startOffset: number;
+  endOffset: number;
+}) {
+  popoverWord.value = data.text;
+  popoverStartOffset.value = data.startOffset;
+  popoverEndOffset.value = data.endOffset;
+  showAnnotationPopover.value = true;
 }
 
-function openAnnotationPopover(selection: TextSelection) {
-  textSelection.value = selection
-  showAnnotationPopover.value = true
-}
-
-function createAnnotation(data: { type: AnnotationType; attributes: Record<string, unknown> }) {
-  if (!textSelection.value || !selectedItem.value?.transcript) return
-  const ann: Annotation = {
-    id: crypto.randomUUID(),
-    transcriptId: selectedItem.value.transcript.id,
-    startOffset: textSelection.value.startOffset,
-    endOffset: textSelection.value.endOffset,
-    text: textSelection.value.text,
+function createAnnotation(data: {
+  type: AnnotationType;
+  attributes: Record<string, unknown>;
+}) {
+  if (!annotator.value) return;
+  annotator.value.addAnnotation({
+    text: popoverWord.value,
+    startOffset: popoverStartOffset.value,
+    endOffset: popoverEndOffset.value,
     type: data.type,
     attributes: data.attributes,
-  }
-  addAnnotation(ann)
-  showAnnotationPopover.value = false
-  textSelection.value = null
+  });
+  annotations.value = annotator.value.getAnnotations();
+  showAnnotationPopover.value = false;
+}
+
+function removeAnnotation(id: string) {
+  if (!annotator.value) return;
+  annotator.value.removeAnnotation(id);
+  annotations.value = annotator.value.getAnnotations();
 }
 
 async function handleSave() {
-  if (!selectedItem.value?.transcript) return
+  if (!selectedItem.value?.transcript || !annotator.value) return;
   try {
     await api.put(`/api/items/${selectedItem.value.id}/transcript`, {
-      correctedText: correctedText.value,
-      annotations: annotations.value,
-    })
+      correctedText: annotator.value.getCorrectedText(),
+      annotations: annotator.value.getAnnotations(),
+    });
   } catch (err) {
-    console.error('Save failed:', err)
+    console.error('Save failed:', err);
   }
 }
 
 async function handleExport() {
   try {
-    const blob = await fetch('/api/export').then((r) => r.blob())
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'gold-standard.jsonl'
-    a.click()
-    URL.revokeObjectURL(url)
+    const blob = await fetch('/api/export').then((r) => r.blob());
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'gold-standard.jsonl';
+    a.click();
+    URL.revokeObjectURL(url);
   } catch (err) {
-    console.error('Export failed:', err)
+    console.error('Export failed:', err);
   }
 }
 
 async function refreshItems() {
   try {
-    const data = await api.get<{ items: unknown[] }>('/api/items')
-    setItems(data.items as any[])
+    const data = await api.get<{ items: unknown[] }>('/api/items');
+    setItems(data.items as any[]);
   } catch {
     // keep current items
   }
@@ -111,10 +126,7 @@ async function refreshItems() {
 
 <template>
   <div class="h-screen flex flex-col bg-gray-50">
-    <TopBar
-      @upload="showUploadModal = true"
-      @export="handleExport"
-    />
+    <TopBar @upload="showUploadModal = true" @export="handleExport" />
     <div class="flex flex-1 overflow-hidden">
       <WorkQueue
         :items="filteredItems"
@@ -129,21 +141,22 @@ async function refreshItems() {
             @time-update="onTimeUpdate"
           />
           <TranscriptEditor
-            :original="selectedItem.transcript?.originalLabel ?? ''"
-            :corrected="correctedText"
+            :original-text="selectedItem.transcript?.originalLabel ?? ''"
             :annotations="annotations"
-            :current-time="currentTime"
-            :word-timings="wordTimings"
-            @update:corrected="onCorrectedUpdate"
             @annotate="openAnnotationPopover"
             @delete-annotation="removeAnnotation"
           />
           <ActionFooter @save="handleSave" />
         </div>
-        <div v-else class="flex items-center justify-center h-full text-gray-400">
+        <div
+          v-else
+          class="flex items-center justify-center h-full text-gray-400"
+        >
           <div class="text-center">
             <p class="text-xl mb-2">No item selected</p>
-            <p class="text-sm">Select an item from the queue or upload new files.</p>
+            <p class="text-sm">
+              Select an item from the queue or upload new files.
+            </p>
           </div>
         </div>
       </main>
@@ -154,8 +167,10 @@ async function refreshItems() {
       @uploaded="refreshItems"
     />
     <AnnotationPopover
-      v-if="showAnnotationPopover && textSelection"
-      :selection="textSelection"
+      v-if="showAnnotationPopover"
+      :word="popoverWord"
+      :start-offset="popoverStartOffset"
+      :end-offset="popoverEndOffset"
       @save="createAnnotation"
       @close="showAnnotationPopover = false"
     />

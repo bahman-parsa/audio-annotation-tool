@@ -1,23 +1,49 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { AnnotationType, TextSelection } from '@/types'
+import type { AnnotationType } from '@/types'
 
-defineProps<{ selection: TextSelection }>()
+defineProps<{
+  word: string
+  startOffset: number
+  endOffset: number
+}>()
 
 const emit = defineEmits<{
   save: [data: { type: AnnotationType; attributes: Record<string, unknown> }]
   close: []
 }>()
 
-const selectedType = ref<AnnotationType>('MEDICAL_TERM')
-const attributes = ref<Record<string, unknown>>({})
+const selectedType = ref<'number' | 'crud'>('number')
 
-const types: AnnotationType[] = [
-  'NUMBER', 'FORMATTING_COMMAND', 'MEDICAL_TERM', 'MEASUREMENT',
-]
+// NUMBER fields
+const rendering = ref<'digits' | 'words'>('digits')
+const normalizedValue = ref('')
+
+// CRUD fields
+const crudMode = ref<'update' | 'delete'>('update')
+const newText = ref('')
 
 function handleSave() {
-  emit('save', { type: selectedType.value, attributes: { ...attributes.value } })
+  if (selectedType.value === 'number') {
+    const val = rendering.value === 'digits'
+      ? Number(normalizedValue.value)
+      : normalizedValue.value
+    if (rendering.value === 'digits' && isNaN(val as number)) return
+    emit('save', {
+      type: 'number',
+      attributes: { rendering: rendering.value, normalizedValue: val },
+    })
+  } else {
+    if (crudMode.value === 'delete') {
+      emit('save', { type: 'delete', attributes: {} })
+    } else {
+      if (!newText.value.trim()) return
+      emit('save', {
+        type: 'update',
+        attributes: { normalizedValue: newText.value.trim() },
+      })
+    }
+  }
 }
 </script>
 
@@ -25,102 +51,64 @@ function handleSave() {
   <div class="fixed inset-0 z-50" @click.self="emit('close')">
     <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl border p-6 w-96">
       <div class="flex justify-between items-center mb-4">
-        <h3 class="font-semibold">Add Annotation</h3>
+        <h3 class="font-semibold">Annotate Word</h3>
         <button class="text-gray-400 hover:text-gray-600" @click="emit('close')">&#10005;</button>
       </div>
       <div class="text-sm text-gray-500 mb-4">
-        Selected: <span class="font-medium text-gray-700">"{{ selection.text }}"</span>
+        Selected: <span class="font-medium text-gray-700">"{{ word }}"</span>
       </div>
       <div class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
-          <select
-            v-model="selectedType"
-            class="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option v-for="t in types" :key="t" :value="t">{{ t.replace('_', ' ') }}</option>
-          </select>
+        <div class="flex gap-2">
+          <button
+            class="flex-1 px-3 py-2 text-sm rounded-md border transition-colors"
+            :class="selectedType === 'number' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'"
+            @click="selectedType = 'number'"
+          >NUMBER</button>
+          <button
+            class="flex-1 px-3 py-2 text-sm rounded-md border transition-colors"
+            :class="selectedType === 'crud' ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'"
+            @click="selectedType = 'crud'"
+          >CRUD</button>
         </div>
 
-        <template v-if="selectedType === 'NUMBER'">
+        <template v-if="selectedType === 'number'">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Rendering</label>
-            <select v-model="attributes.rendering" class="w-full px-3 py-2 border rounded-md text-sm">
-              <option value="words">Words</option>
+            <select v-model="rendering" class="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="digits">Digits</option>
+              <option value="words">Words</option>
             </select>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Normalized Value</label>
-            <input v-model="attributes.normalizedValue" class="w-full px-3 py-2 border rounded-md text-sm" placeholder="e.g. 12" />
+            <input v-model="normalizedValue" :type="rendering === 'digits' ? 'number' : 'text'" class="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" :placeholder="rendering === 'digits' ? 'e.g. 12' : 'e.g. zwoelf'" />
           </div>
         </template>
 
-        <template v-if="selectedType === 'FORMATTING_COMMAND'">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Command</label>
-            <select v-model="attributes.command" class="w-full px-3 py-2 border rounded-md text-sm">
-              <option value="newline">Newline</option>
-              <option value="paragraph">Paragraph</option>
-              <option value="period">Period</option>
-              <option value="comma">Comma</option>
-              <option value="colon">Colon</option>
-              <option value="dash">Dash</option>
-              <option value="bracket_open">Bracket Open</option>
-              <option value="bracket_close">Bracket Close</option>
-            </select>
+        <template v-if="selectedType === 'crud'">
+          <div class="flex gap-2">
+            <button
+              class="flex-1 px-3 py-2 text-sm rounded-md border transition-colors"
+              :class="crudMode === 'update' ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'"
+              @click="crudMode = 'update'"
+            >Update</button>
+            <button
+              class="flex-1 px-3 py-2 text-sm rounded-md border transition-colors"
+              :class="crudMode === 'delete' ? 'bg-red-500 text-white border-red-500' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'"
+              @click="crudMode = 'delete'"
+            >Delete</button>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Is Command?</label>
-            <select v-model="attributes.isCommand" class="w-full px-3 py-2 border rounded-md text-sm">
-              <option :value="true">Yes (spoken instruction)</option>
-              <option :value="false">No (literal words)</option>
-            </select>
-          </div>
-        </template>
-
-        <template v-if="selectedType === 'MEDICAL_TERM'">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-            <select v-model="attributes.category" class="w-full px-3 py-2 border rounded-md text-sm">
-              <option value="anatomy">Anatomy</option>
-              <option value="procedure">Procedure</option>
-              <option value="diagnosis">Diagnosis</option>
-              <option value="drug">Drug</option>
-              <option value="device">Device</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Note</label>
-            <input v-model="attributes.note" class="w-full px-3 py-2 border rounded-md text-sm" placeholder="Optional note" />
-          </div>
-        </template>
-
-        <template v-if="selectedType === 'MEASUREMENT'">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Value</label>
-            <input v-model="attributes.value" class="w-full px-3 py-2 border rounded-md text-sm" placeholder="e.g. 1500" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Unit</label>
-            <select v-model="attributes.unit" class="w-full px-3 py-2 border rounded-md text-sm">
-              <option value="g">g</option>
-              <option value="mg">mg</option>
-              <option value="ug">&#181;g</option>
-              <option value="kg">kg</option>
-              <option value="ml">ml</option>
-              <option value="l">l</option>
-              <option value="mmHg">mmHg</option>
-              <option value="IE">IE</option>
-              <option value="mm">mm</option>
-              <option value="cm">cm</option>
-              <option value="Ch">Ch</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Normalized Value</label>
-            <input v-model="attributes.normalizedValue" class="w-full px-3 py-2 border rounded-md text-sm" placeholder="Base unit value" />
-          </div>
+          <template v-if="crudMode === 'update'">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">New Text</label>
+              <input v-model="newText" class="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" :placeholder="`Replace '${word}\' with...`" />
+            </div>
+          </template>
+          <template v-if="crudMode === 'delete'">
+            <div class="text-sm text-red-600 bg-red-50 p-3 rounded-md">
+              This word will be marked as deleted in the corrected text.
+            </div>
+          </template>
         </template>
 
         <div class="flex justify-end gap-2 pt-2">
