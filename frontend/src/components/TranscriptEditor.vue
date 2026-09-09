@@ -1,80 +1,93 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { TranscriptAnnotator } from '@/lib/transcript-annotator'
-import type { Annotation } from '@/types'
+import { ref, computed } from 'vue';
+import { TranscriptAnnotator } from '@/lib/transcript-annotator';
+import type { Annotation } from '@/types';
 
 const props = defineProps<{
-  originalText: string
-  annotations: Annotation[]
-}>()
+  originalText: string;
+  annotations: Annotation[];
+  saveMessage: string;
+}>();
 
 const emit = defineEmits<{
-  'annotate': [data: { text: string; startOffset: number; endOffset: number }]
-  'delete-annotation': [id: string]
-}>()
+  annotate: [data: { text: string; startOffset: number; endOffset: number }];
+  'delete-annotation': [id: string];
+  save: [];
+}>();
 
-const originalPanel = ref<HTMLDivElement>()
-const correctedPanel = ref<HTMLDivElement>()
-let isSyncing = false
+const originalPanel = ref<HTMLDivElement>();
+const correctedPanel = ref<HTMLDivElement>();
+let isSyncing = false;
 
 function syncScroll(source: 'original' | 'corrected') {
-  if (isSyncing) return
-  isSyncing = true
+  if (isSyncing) return;
+  isSyncing = true;
 
-  const from = source === 'original' ? originalPanel.value! : correctedPanel.value!
-  const to = source === 'original' ? correctedPanel.value! : originalPanel.value!
+  const from =
+    source === 'original' ? originalPanel.value! : correctedPanel.value!;
+  const to =
+    source === 'original' ? correctedPanel.value! : originalPanel.value!;
 
-  const scrollPercent = from.scrollTop / (from.scrollHeight - from.clientHeight || 1)
-  to.scrollTop = scrollPercent * (to.scrollHeight - to.clientHeight)
+  const scrollPercent =
+    from.scrollTop / (from.scrollHeight - from.clientHeight || 1);
+  to.scrollTop = scrollPercent * (to.scrollHeight - to.clientHeight);
 
-  requestAnimationFrame(() => { isSyncing = false })
+  requestAnimationFrame(() => {
+    isSyncing = false;
+  });
 }
 
-const annotator = computed(() =>
-  new TranscriptAnnotator(props.originalText, props.annotations)
-)
+const annotator = computed(
+  () => new TranscriptAnnotator(props.originalText, props.annotations),
+);
 
-const renderedHTML = computed(() => annotator.value.renderAnnotatedHTML())
+const renderedHTML = computed(() => annotator.value.renderAnnotatedHTML());
 
-function findAnnotatedWord(target: HTMLElement): { id?: string; start?: number; end?: number } {
-  let el: HTMLElement | null = target
+function findAnnotatedWord(target: HTMLElement): {
+  id?: string;
+  start?: number;
+  end?: number;
+} {
+  let el: HTMLElement | null = target;
   while (el && correctedPanel.value && !el.classList?.contains('word')) {
-    if (el === correctedPanel.value) return {}
-    el = el.parentElement
+    if (el === correctedPanel.value) return {};
+    el = el.parentElement;
   }
-  if (!el) return {}
-  const id = el.getAttribute('data-id') ?? undefined
-  const start = parseInt(el.getAttribute('data-start') ?? '-1', 10)
-  return { id, start }
+  if (!el) return {};
+  const id = el.getAttribute('data-id') ?? undefined;
+  const start = parseInt(el.getAttribute('data-start') ?? '-1', 10);
+  return { id, start };
 }
 
 function handleWordDblClick(e: MouseEvent) {
-  const target = e.target as HTMLElement
-  const { start } = findAnnotatedWord(target)
-  if (start < 0) return
+  const target = e.target as HTMLElement;
+  const { start } = findAnnotatedWord(target);
+  if (start < 0) return;
 
-  const word = target.textContent?.trim() ?? ''
-  if (!word) return
+  const word = target.textContent?.trim() ?? '';
+  if (!word) return;
 
   emit('annotate', {
     text: word,
     startOffset: start,
     endOffset: start + word.length,
-  })
+  });
 }
 
 function handleWordClick(e: MouseEvent) {
-  const target = e.target as HTMLElement
-  const { id } = findAnnotatedWord(target)
+  const target = e.target as HTMLElement;
+  const { id } = findAnnotatedWord(target);
   if (id) {
-    emit('delete-annotation', id)
+    emit('delete-annotation', id);
   }
 }
 </script>
 
 <template>
   <div class="bg-white border rounded-lg">
-    <h3 class="text-sm font-semibold text-gray-700 px-4 pt-4 pb-2">Transcript Editing &amp; Annotation</h3>
+    <h3 class="text-sm font-semibold text-gray-700 px-4 pt-4 pb-2">
+      Transcript Editing &amp; Annotation
+    </h3>
     <div class="transcript-panels">
       <div
         ref="originalPanel"
@@ -96,6 +109,17 @@ function handleWordClick(e: MouseEvent) {
           @dblclick="handleWordDblClick"
           @click="handleWordClick"
         />
+        <div class="panel-footer">
+          <button
+            class="px-4 py-1.5 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors cursor-pointer"
+            @click="emit('save')"
+          >
+            Save &amp; Mark Ready
+          </button>
+          <span v-if="saveMessage" class="text-sm text-gray-600">{{
+            saveMessage
+          }}</span>
+        </div>
       </div>
     </div>
   </div>
@@ -147,6 +171,15 @@ function handleWordClick(e: MouseEvent) {
   background: white;
   outline: none;
   cursor: text;
+}
+
+.panel-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  border-top: 1px solid #e2e8f0;
+  background: white;
 }
 
 :deep(.word) {

@@ -5,16 +5,15 @@ import WorkQueue from '@/components/WorkQueue.vue';
 import RecordingMetadata from '@/components/RecordingMetadata.vue';
 import AudioPlayer from '@/components/AudioPlayer.vue';
 import TranscriptEditor from '@/components/TranscriptEditor.vue';
-import ActionFooter from '@/components/ActionFooter.vue';
 import UploadModal from '@/components/UploadModal.vue';
 import AnnotationPopover from '@/components/AnnotationPopover.vue';
 import { useWorkQueue } from '@/composables/useWorkQueue';
 import { useWordTimestamps } from '@/composables/useWordTimestamps';
 import { TranscriptAnnotator } from '@/lib/transcript-annotator';
-import type { Annotation, AnnotationType } from '@/types';
+import type { Annotation, AnnotationType, AudioItem } from '@/types';
 import { api } from '@/services/api';
 
-const { filteredItems, selectedItem, selectedId, selectItem, setItems } =
+const { filteredItems, selectedItem, selectedId, selectItem, setItems, updateItem } =
   useWorkQueue();
 const { estimate } = useWordTimestamps();
 
@@ -28,6 +27,7 @@ const wordTimings = ref<ReturnType<typeof estimate>>([]);
 
 const annotator = ref<TranscriptAnnotator | null>(null);
 const annotations = ref<Annotation[]>([]);
+const saveMessage = ref('');
 
 onMounted(async () => {
   try {
@@ -91,11 +91,15 @@ function removeAnnotation(id: string) {
 async function handleSave() {
   if (!selectedItem.value?.transcript || !annotator.value) return;
   try {
-    await api.put(`/api/items/${selectedItem.value.id}/transcript`, {
+    const result = await api.put<{ item: AudioItem }>(`/api/items/${selectedItem.value.id}/transcript`, {
       correctedText: annotator.value.getCorrectedText(),
       annotations: annotator.value.getAnnotations(),
     });
+    updateItem(result.item);
+    saveMessage.value = 'Saved.';
+    setTimeout(() => { saveMessage.value = ''; }, 2000);
   } catch (err) {
+    saveMessage.value = 'Save failed.';
     console.error('Save failed:', err);
   }
 }
@@ -145,10 +149,11 @@ async function refreshItems() {
           <TranscriptEditor
             :original-text="selectedItem.transcript?.originalLabel ?? ''"
             :annotations="annotations"
+            :save-message="saveMessage"
             @annotate="openAnnotationPopover"
             @delete-annotation="removeAnnotation"
+            @save="handleSave"
           />
-          <ActionFooter @save="handleSave" />
         </div>
         <div
           v-else

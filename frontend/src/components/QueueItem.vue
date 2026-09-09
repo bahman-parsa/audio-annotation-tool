@@ -58,8 +58,9 @@ async function handleSubmit() {
       `/api/items/${props.item.id}/transcript`,
       { originalLabel: transcriptText.value, rawPath: props.item.filename },
     );
-    updateItem({ ...props.item, transcript: result.transcript });
-    showModal.value = false;
+    updateItem({ ...props.item, status: 'NEW', transcript: result.transcript });
+    statusMessage.value = 'Transcript added.';
+    setTimeout(() => { showModal.value = false; }, 1000);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     statusMessage.value = `Failed: ${message}`;
