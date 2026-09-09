@@ -1,9 +1,12 @@
 import { ref, computed } from 'vue'
 import type { AudioItem, Status } from '@/types'
 
+export type SortBy = 'default' | 'duration-asc' | 'duration-desc'
+
 const items = ref<AudioItem[]>([])
 const searchQuery = ref('')
 const statusFilter = ref<Status | 'ALL'>('ALL')
+const sortBy = ref<SortBy>('default')
 const selectedId = ref<string | null>(null)
 
 const filteredItems = computed(() => {
@@ -14,6 +17,11 @@ const filteredItems = computed(() => {
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase()
     result = result.filter((item) => item.filename.toLowerCase().includes(q))
+  }
+  if (sortBy.value === 'duration-asc') {
+    result = [...result].sort((a, b) => a.duration - b.duration)
+  } else if (sortBy.value === 'duration-desc') {
+    result = [...result].sort((a, b) => b.duration - a.duration)
   }
   return result
 })
@@ -34,6 +42,7 @@ export function useWorkQueue() {
     items,
     searchQuery,
     statusFilter,
+    sortBy,
     selectedId,
     filteredItems,
     selectedItem,

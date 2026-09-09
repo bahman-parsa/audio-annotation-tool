@@ -32,12 +32,14 @@ describe('useWorkQueue', () => {
     selectedItem,
     searchQuery,
     statusFilter,
+    sortBy,
   } = useWorkQueue();
 
   beforeEach(() => {
     items.value = [];
     searchQuery.value = '';
     statusFilter.value = 'ALL';
+    sortBy.value = 'default';
     selectItem('');
   });
 

@@ -12,9 +12,14 @@ const emit = defineEmits<{
   select: [id: string];
 }>();
 
-const { searchQuery, statusFilter } = useWorkQueue();
+const { searchQuery, statusFilter, sortBy } = useWorkQueue();
 
 const statuses = ['ALL', 'PENDING', 'NEW', 'READY'] as const;
+const sortOptions = [
+  { value: 'default', label: 'Default Order' },
+  { value: 'duration-asc', label: 'Duration ↑' },
+  { value: 'duration-desc', label: 'Duration ↓' },
+] as const;
 </script>
 
 <template>
@@ -32,6 +37,14 @@ const statuses = ['ALL', 'PENDING', 'NEW', 'READY'] as const;
       >
         <option v-for="s in statuses" :key="s" :value="s">
           {{ s === 'ALL' ? 'All Statuses' : s.replace('_', ' ') }}
+        </option>
+      </select>
+      <select
+        v-model="sortBy"
+        class="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        <option v-for="opt in sortOptions" :key="opt.value" :value="opt.value">
+          {{ opt.label }}
         </option>
       </select>
     </div>
