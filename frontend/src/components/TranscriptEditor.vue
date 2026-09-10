@@ -6,7 +6,6 @@ import type { Annotation } from '@/types';
 const props = defineProps<{
   originalText: string;
   annotations: Annotation[];
-  saveMessage: string;
 }>();
 
 const emit = defineEmits<{
@@ -116,9 +115,6 @@ function handleWordClick(e: MouseEvent) {
           >
             Save &amp; Mark Ready
           </button>
-          <span v-if="saveMessage" class="text-sm text-gray-600">{{
-            saveMessage
-          }}</span>
         </div>
       </div>
     </div>

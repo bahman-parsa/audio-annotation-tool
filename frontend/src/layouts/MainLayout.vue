@@ -7,6 +7,7 @@ import AudioPlayer from '@/components/AudioPlayer.vue';
 import TranscriptEditor from '@/components/TranscriptEditor.vue';
 import UploadModal from '@/components/UploadModal.vue';
 import AnnotationPopover from '@/components/AnnotationPopover.vue';
+import StatusModal from '@/components/StatusModal.vue';
 import { useWorkQueue } from '@/composables/useWorkQueue';
 import { useWordTimestamps } from '@/composables/useWordTimestamps';
 import { TranscriptAnnotator } from '@/lib/transcript-annotator';
@@ -27,7 +28,13 @@ const wordTimings = ref<ReturnType<typeof estimate>>([]);
 
 const annotator = ref<TranscriptAnnotator | null>(null);
 const annotations = ref<Annotation[]>([]);
-const saveMessage = ref('');
+const statusModalMessage = ref('');
+const statusModalError = ref(false);
+
+function showStatus(message: string, isError = false) {
+  statusModalMessage.value = message;
+  statusModalError.value = isError;
+}
 
 onMounted(async () => {
   try {
@@ -96,10 +103,9 @@ async function handleSave() {
       annotations: annotator.value.getAnnotations(),
     });
     updateItem(result.item);
-    saveMessage.value = 'Saved.';
-    setTimeout(() => { saveMessage.value = ''; }, 2000);
+    showStatus('Saved.');
   } catch (err) {
-    saveMessage.value = 'Save failed.';
+    showStatus('Save failed.', true);
     console.error('Save failed:', err);
   }
 }
@@ -138,6 +144,7 @@ async function refreshItems() {
         :items="filteredItems"
         :selected-id="selectedId"
         @select="selectQueueItem"
+        @status="showStatus($event.message, $event.isError)"
       />
       <main class="flex-1 overflow-y-auto p-6">
         <div v-if="selectedItem" class="max-w-6xl mx-auto space-y-4">
@@ -149,7 +156,6 @@ async function refreshItems() {
           <TranscriptEditor
             :original-text="selectedItem.transcript?.originalLabel ?? ''"
             :annotations="annotations"
-            :save-message="saveMessage"
             @annotate="openAnnotationPopover"
             @delete-annotation="removeAnnotation"
             @save="handleSave"
@@ -172,6 +178,7 @@ async function refreshItems() {
       v-if="showUploadModal"
       @close="showUploadModal = false"
       @uploaded="refreshItems"
+      @status="showStatus($event.message, $event.isError)"
     />
     <AnnotationPopover
       v-if="showAnnotationPopover"
@@ -180,6 +187,12 @@ async function refreshItems() {
       :end-offset="popoverEndOffset"
       @save="createAnnotation"
       @close="showAnnotationPopover = false"
+    />
+    <StatusModal
+      v-if="statusModalMessage"
+      :message="statusModalMessage"
+      :is-error="statusModalError"
+      @close="statusModalMessage = ''"
     />
   </div>
 </template>

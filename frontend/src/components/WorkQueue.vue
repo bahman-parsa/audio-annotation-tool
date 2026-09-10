@@ -10,6 +10,7 @@ defineProps<{
 
 const emit = defineEmits<{
   select: [id: string];
+  status: [data: { message: string; isError: boolean }];
 }>();
 
 const { searchQuery, statusFilter, sortBy } = useWorkQueue();
@@ -61,6 +62,7 @@ const sortOptions = [
         :item="item"
         :is-selected="item.id === selectedId"
         @click="emit('select', item.id)"
+        @status="(data) => emit('status', data)"
       />
     </div>
   </aside>

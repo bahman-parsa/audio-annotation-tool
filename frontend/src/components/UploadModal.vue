@@ -5,9 +5,9 @@ import { api } from '@/services/api'
 const emit = defineEmits<{
   close: []
   uploaded: []
+  status: [data: { message: string; isError: boolean }]
 }>()
 
-const uploadStatus = ref('')
 const selectedFiles = ref<File[]>([])
 const transcriptFile = ref<File | null>(null)
 const transcriptJson = ref('')
@@ -91,7 +91,6 @@ function clearTranscript() {
 async function handleUpload() {
   if (selectedFiles.value.length === 0 && !transcriptJson.value) return
 
-  uploadStatus.value = 'Uploading...'
   const formData = new FormData()
 
   for (const file of selectedFiles.value) {
@@ -113,22 +112,27 @@ async function handleUpload() {
     const parts: string[] = []
     if (result.uploaded > 0) parts.push(`Uploaded ${result.uploaded} file(s)`)
     if (result.matched > 0) parts.push(`Matched ${result.matched} transcript(s)`)
-    uploadStatus.value = parts.join('. ') + '.'
+    let message = parts.join('. ') + '.'
 
     if (result.errors.length > 0) {
-      uploadStatus.value += ` Errors: ${result.errors.join(', ')}`
+      message += ` Errors: ${result.errors.join(', ')}`
     }
     if (result.unmatched.length > 0) {
-      uploadStatus.value += ` Unmatched transcripts: ${result.unmatched.join(', ')}`
+      message += ` Unmatched transcripts: ${result.unmatched.join(', ')}`
     }
+
+    const isError = result.errors.length > 0 && result.uploaded === 0
+    emit('status', { message, isError })
 
     if (result.uploaded > 0 || result.matched > 0) {
       emit('uploaded')
     }
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error'
-    uploadStatus.value = `Upload failed: ${message}`
+    emit('status', { message: `Upload failed: ${message}`, isError: true })
   }
+
+  emit('close')
 }
 </script>
 
@@ -179,10 +183,6 @@ async function handleUpload() {
         >
           Upload
         </button>
-
-        <div v-if="uploadStatus" class="p-3 bg-gray-50 rounded-md text-sm text-gray-700">
-          {{ uploadStatus }}
-        </div>
       </div>
     </div>
   </div>

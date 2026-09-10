@@ -14,9 +14,12 @@ const { updateItem } = useWorkQueue();
 const showModal = ref(false);
 const modalMode = ref<'add' | 'update'>('add');
 const transcriptText = ref('');
-const statusMessage = ref('');
 const submitting = ref(false);
 const showConfirm = ref(false);
+
+const emit = defineEmits<{
+  status: [data: { message: string; isError: boolean }]
+}>();
 
 const annotationCount = computed(() => props.item.transcript?.annotations.length ?? 0);
 
@@ -47,7 +50,6 @@ function statusIcon(status: string) {
 function openAddModal() {
   modalMode.value = 'add';
   transcriptText.value = '';
-  statusMessage.value = '';
   submitting.value = false;
   showConfirm.value = false;
   showModal.value = true;
@@ -56,7 +58,6 @@ function openAddModal() {
 function openUpdateModal() {
   modalMode.value = 'update';
   transcriptText.value = '';
-  statusMessage.value = '';
   submitting.value = false;
   showConfirm.value = false;
   showModal.value = true;
@@ -74,7 +75,6 @@ async function doSubmit() {
   if (!transcriptText.value.trim() || submitting.value) return;
 
   submitting.value = true;
-  statusMessage.value = 'Saving...';
 
   try {
     if (modalMode.value === 'add') {
@@ -83,20 +83,21 @@ async function doSubmit() {
         { originalLabel: transcriptText.value, rawPath: props.item.filename },
       );
       updateItem({ ...props.item, status: 'NEW', transcript: result.transcript });
+      emit('status', { message: 'Transcript added.', isError: false });
     } else {
       const result = await api.put<{ item: AudioItem }>(
         `/api/items/${props.item.id}/transcript/replace`,
         { originalLabel: transcriptText.value },
       );
       updateItem(result.item);
+      emit('status', { message: 'Transcript replaced.', isError: false });
     }
-    statusMessage.value = modalMode.value === 'add' ? 'Transcript added.' : 'Transcript replaced.';
-    setTimeout(() => { showModal.value = false; }, 1000);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';
-    statusMessage.value = `Failed: ${message}`;
+    emit('status', { message: `Failed: ${message}`, isError: true });
   } finally {
     submitting.value = false;
+    showModal.value = false;
   }
 }
 </script>
@@ -180,9 +181,6 @@ async function doSubmit() {
             >
               {{ submitting ? 'Saving...' : (modalMode === 'add' ? 'Save Transcript' : 'Replace Transcript') }}
             </button>
-          </div>
-          <div v-if="statusMessage" class="p-3 bg-gray-50 rounded-md text-sm text-gray-700">
-            {{ statusMessage }}
           </div>
         </div>
       </div>

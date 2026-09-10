@@ -82,7 +82,7 @@ describe('UploadModal', () => {
     expect(formData).toBeInstanceOf(FormData)
   })
 
-  it('displays success status message after successful upload', async () => {
+  it('emits status event with success message after successful upload', async () => {
     vi.mocked(api.upload).mockResolvedValueOnce({
       uploaded: 2,
       matched: 1,
@@ -104,8 +104,12 @@ describe('UploadModal', () => {
     await uploadButton!.trigger('click')
     await vi.dynamicImportSettled()
 
-    expect(wrapper.text()).toContain('Uploaded 2 file(s)')
-    expect(wrapper.text()).toContain('Matched 1 transcript(s)')
+    const statusEvents = wrapper.emitted('status')
+    expect(statusEvents).toHaveLength(1)
+    expect(statusEvents![0][0]).toEqual({
+      message: 'Uploaded 2 file(s). Matched 1 transcript(s).',
+      isError: false,
+    })
   })
 
   it('emits uploaded event when upload succeeds', async () => {
@@ -133,7 +137,7 @@ describe('UploadModal', () => {
     expect(wrapper.emitted('uploaded')).toHaveLength(1)
   })
 
-  it('displays error message when upload fails', async () => {
+  it('emits status event with error message when upload fails', async () => {
     vi.mocked(api.upload).mockRejectedValueOnce(new Error('Network error'))
 
     const wrapper = mount(UploadModal)
@@ -150,7 +154,12 @@ describe('UploadModal', () => {
     await uploadButton!.trigger('click')
     await vi.dynamicImportSettled()
 
-    expect(wrapper.text()).toContain('Upload failed: Network error')
+    const statusEvents = wrapper.emitted('status')
+    expect(statusEvents).toHaveLength(1)
+    expect(statusEvents![0][0]).toEqual({
+      message: 'Upload failed: Network error',
+      isError: true,
+    })
   })
 
   it('emits close when clicking the X button', async () => {
