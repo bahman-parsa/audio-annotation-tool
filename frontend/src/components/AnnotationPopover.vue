@@ -13,7 +13,7 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const selectedType = ref<'number' | 'crud' | 'medical' | 'measurement'>('number')
+const selectedType = ref<'number' | 'crud' | 'medical' | 'measurement' | 'entity'>('number')
 
 // NUMBER fields
 const rendering = ref<'digits' | 'words'>('digits')
@@ -54,6 +54,16 @@ const measurementUnits = [
   { value: 'Ch', label: 'Ch (charriere)' },
 ]
 
+// NAMED_ENTITY fields
+const entityType = ref<string>('human')
+
+const entityTypes = [
+  { value: 'human', label: 'Human name' },
+  { value: 'organisation', label: 'Organisation' },
+  { value: 'place', label: 'Place' },
+  { value: 'date', label: 'Date' },
+]
+
 function handleSave() {
   if (selectedType.value === 'number') {
     const val = rendering.value === 'digits'
@@ -78,6 +88,11 @@ function handleSave() {
         unit: measurementUnit.value,
         normalizedValue: measurementNormalized.value ?? measurementValue.value,
       },
+    })
+  } else if (selectedType.value === 'entity') {
+    emit('save', {
+      type: 'NAMED_ENTITY',
+      attributes: { entityType: entityType.value },
     })
   } else {
     if (crudMode.value === 'delete') {
@@ -125,6 +140,11 @@ function handleSave() {
             :class="selectedType === 'measurement' ? 'bg-teal-500 text-white border-teal-500' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'"
             @click="selectedType = 'measurement'"
           >MEASURE</button>
+          <button
+            class="flex-1 px-3 py-2 text-sm rounded-md border transition-colors"
+            :class="selectedType === 'entity' ? 'bg-indigo-500 text-white border-indigo-500' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'"
+            @click="selectedType = 'entity'"
+          >ENTITY</button>
         </div>
 
         <template v-if="selectedType === 'number'">
@@ -194,6 +214,15 @@ function handleSave() {
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Normalized Value (optional)</label>
             <input v-model.number="measurementNormalized" type="number" class="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="e.g. 1.5" />
+          </div>
+        </template>
+
+        <template v-if="selectedType === 'entity'">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Entity Type</label>
+            <select v-model="entityType" class="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option v-for="et in entityTypes" :key="et.value" :value="et.value">{{ et.label }}</option>
+            </select>
           </div>
         </template>
 

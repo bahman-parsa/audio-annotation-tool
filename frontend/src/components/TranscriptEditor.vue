@@ -284,4 +284,60 @@ function handleOriginalClick(e: MouseEvent) {
   border-radius: 0.25rem;
   margin-right: 0.25rem;
 }
+
+:deep(.word--entity-human) {
+  background: #dbeafe;
+  border-bottom: 2px solid #3b82f6;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+}
+
+:deep(.word--entity-organisation) {
+  background: #e0e7ff;
+  border-bottom: 2px solid #6366f1;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+}
+
+:deep(.word--entity-place) {
+  background: #d1fae5;
+  border-bottom: 2px solid #10b981;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+}
+
+:deep(.word--entity-date) {
+  background: #fce7f3;
+  border-bottom: 2px solid #ec4899;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+}
+
+:deep(.word--entity-label) {
+  font-size: 0.7em;
+  font-weight: 600;
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.25rem;
+  margin-right: 0.25rem;
+}
+
+:deep(.word--entity-human .word--entity-label) {
+  background: #bfdbfe;
+  color: #1d4ed8;
+}
+
+:deep(.word--entity-organisation .word--entity-label) {
+  background: #c7d2fe;
+  color: #4338ca;
+}
+
+:deep(.word--entity-place .word--entity-label) {
+  background: #a7f3d0;
+  color: #047857;
+}
+
+:deep(.word--entity-date .word--entity-label) {
+  background: #fbcfe8;
+  color: #be185d;
+}
 </style>
