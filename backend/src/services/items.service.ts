@@ -163,3 +163,38 @@ export async function replaceTranscript(
     },
   });
 }
+
+export async function deleteTranscript(audioItemId: string) {
+  const audioItem = await prisma.audioItem.findUnique({
+    where: { id: audioItemId },
+    include: { transcript: true },
+  });
+
+  if (!audioItem) {
+    throw new Error('Audio item not found');
+  }
+
+  if (!audioItem.transcript) {
+    throw new Error('Audio item has no transcript');
+  }
+
+  await prisma.transcript.delete({
+    where: { id: audioItem.transcript.id },
+  });
+
+  if (audioItem.status !== 'PENDING') {
+    await prisma.audioItem.update({
+      where: { id: audioItemId },
+      data: { status: 'PENDING' },
+    });
+  }
+
+  return prisma.audioItem.findUnique({
+    where: { id: audioItemId },
+    include: {
+      transcript: {
+        include: { annotations: true },
+      },
+    },
+  });
+}

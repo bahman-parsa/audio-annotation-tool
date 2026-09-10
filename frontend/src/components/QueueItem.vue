@@ -16,6 +16,7 @@ const modalMode = ref<'add' | 'update'>('add');
 const transcriptText = ref('');
 const submitting = ref(false);
 const showConfirm = ref(false);
+const showDeleteConfirm = ref(false);
 
 const emit = defineEmits<{
   status: [data: { message: string; isError: boolean }]
@@ -100,6 +101,26 @@ async function doSubmit() {
     showModal.value = false;
   }
 }
+
+async function handleDelete() {
+  if (submitting.value) return;
+
+  submitting.value = true;
+
+  try {
+    const result = await api.delete<{ item: AudioItem }>(
+      `/api/items/${props.item.id}/transcript`,
+    );
+    updateItem(result.item);
+    showDeleteConfirm.value = false;
+    emit('status', { message: 'Transcript deleted.', isError: false });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    emit('status', { message: `Failed: ${message}`, isError: true });
+  } finally {
+    submitting.value = false;
+  }
+}
 </script>
 
 <template>
@@ -131,12 +152,18 @@ async function doSubmit() {
         Add Transcript
       </button>
     </div>
-    <div v-else class="mt-2">
+    <div v-else class="mt-2 flex items-center gap-2">
       <button
         class="text-xs px-2 py-0.5 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
         @click.stop="openUpdateModal"
       >
         Update Transcript
+      </button>
+      <button
+        class="text-xs px-2 py-0.5 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+        @click.stop="showDeleteConfirm = true"
+      >
+        Delete Transcript
       </button>
     </div>
 
@@ -182,6 +209,34 @@ async function doSubmit() {
               {{ submitting ? 'Saving...' : (modalMode === 'add' ? 'Save Transcript' : 'Replace Transcript') }}
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-if="showDeleteConfirm"
+      class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center"
+      @click.self="showDeleteConfirm = false"
+    >
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-sm mx-4 p-4 space-y-4">
+        <h2 class="text-lg font-semibold">Delete Transcript?</h2>
+        <p class="text-sm text-gray-600">
+          This will remove the transcript and all {{ annotationCount }} annotation(s). This action cannot be undone.
+        </p>
+        <div class="flex gap-2">
+          <button
+            class="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
+            @click="showDeleteConfirm = false"
+          >
+            Cancel
+          </button>
+          <button
+            class="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 transition-colors"
+            :disabled="submitting"
+            @click="handleDelete"
+          >
+            {{ submitting ? 'Deleting...' : 'Delete' }}
+          </button>
         </div>
       </div>
     </div>
