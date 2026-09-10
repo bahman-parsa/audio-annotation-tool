@@ -174,11 +174,25 @@ describe('POST /api/upload', () => {
           filename: `large-${randomUUID()}.wav`,
         });
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(413);
       const body = res.body as UploadResult;
       expect(body.errors).toEqual(
         expect.arrayContaining([expect.stringContaining('file too large')]),
       );
+    });
+  });
+
+  describe('file count validation', () => {
+    it('rejects more than 100 files', async () => {
+      const req = request(app).post('/api/upload');
+      const buffer = createTestWavBuffer(130);
+
+      for (let i = 0; i < 101; i++) {
+        req.attach('files', buffer, { filename: `file-${i}-${randomUUID()}.wav` });
+      }
+
+      const res = await req;
+      expect(res.status).toBe(400);
     });
   });
 

@@ -6,7 +6,7 @@ import { upload } from '../controllers/upload.controller.js';
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 const uploadMiddleware = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_FILE_SIZE },
+  limits: { fileSize: MAX_FILE_SIZE, files: 100 },
 });
 
 const fixEncoding = (req: Request, _res: Response, next: NextFunction) => {
