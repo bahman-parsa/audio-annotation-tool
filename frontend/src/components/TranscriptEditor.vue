@@ -250,4 +250,21 @@ function handleOriginalClick(e: MouseEvent) {
   padding: 0.125rem 0.25rem;
   border-radius: 0.25rem;
 }
+
+:deep(.word--medical) {
+  background: #ede9fe;
+  border-bottom: 2px solid #8b5cf6;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+}
+
+:deep(.word--medical-label) {
+  font-size: 0.7em;
+  font-weight: 600;
+  background: #ddd6fe;
+  color: #7c3aed;
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.25rem;
+  margin-right: 0.25rem;
+}
 </style>

@@ -13,7 +13,7 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const selectedType = ref<'number' | 'crud'>('number')
+const selectedType = ref<'number' | 'crud' | 'medical'>('number')
 
 // NUMBER fields
 const rendering = ref<'digits' | 'words'>('digits')
@@ -22,6 +22,18 @@ const normalizedValue = ref('')
 // CRUD fields
 const crudMode = ref<'update' | 'delete'>('update')
 const newText = ref('')
+
+// MEDICAL_TERM fields
+const medicalCategory = ref<string>('drug')
+const medicalNote = ref('')
+
+const medicalCategories = [
+  { value: 'anatomy', label: 'Anatomy' },
+  { value: 'procedure', label: 'Procedure' },
+  { value: 'diagnosis', label: 'Diagnosis' },
+  { value: 'drug', label: 'Drug' },
+  { value: 'device', label: 'Device' },
+]
 
 function handleSave() {
   if (selectedType.value === 'number') {
@@ -32,6 +44,11 @@ function handleSave() {
     emit('save', {
       type: 'NUMBER',
       attributes: { rendering: rendering.value, normalizedValue: val },
+    })
+  } else if (selectedType.value === 'medical') {
+    emit('save', {
+      type: 'MEDICAL_TERM',
+      attributes: { category: medicalCategory.value, note: medicalNote.value.trim() },
     })
   } else {
     if (crudMode.value === 'delete') {
@@ -69,6 +86,11 @@ function handleSave() {
             :class="selectedType === 'crud' ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'"
             @click="selectedType = 'crud'"
           >CRUD</button>
+          <button
+            class="flex-1 px-3 py-2 text-sm rounded-md border transition-colors"
+            :class="selectedType === 'medical' ? 'bg-violet-500 text-white border-violet-500' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'"
+            @click="selectedType = 'medical'"
+          >MEDICAL</button>
         </div>
 
         <template v-if="selectedType === 'number'">
@@ -109,6 +131,19 @@ function handleSave() {
               This word will be marked as deleted in the corrected text.
             </div>
           </template>
+        </template>
+
+        <template v-if="selectedType === 'medical'">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <select v-model="medicalCategory" class="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
+              <option v-for="cat in medicalCategories" :key="cat.value" :value="cat.value">{{ cat.label }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Note (optional)</label>
+            <input v-model="medicalNote" class="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-violet-500" placeholder="Additional context..." />
+          </div>
         </template>
 
         <div class="flex justify-end gap-2 pt-2">
