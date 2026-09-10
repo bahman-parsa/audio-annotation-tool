@@ -34,8 +34,8 @@ function formatTime(seconds: number): string {
 function handleKeyDown(e: KeyboardEvent) {
   if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
   if ((e.target as HTMLElement).isContentEditable) return
-  switch (e.code) {
-    case 'Space':
+  switch (e.key) {
+    case ' ':
       e.preventDefault()
       playPause()
       break
@@ -47,15 +47,21 @@ function handleKeyDown(e: KeyboardEvent) {
       e.preventDefault()
       jumpForward(5)
       break
-    case 'BracketLeft':
+    case '[':
       e.preventDefault()
-      cycleSpeed()
+      cycleSpeed(-1)
+      break
+    case ']':
+      e.preventDefault()
+      cycleSpeed(1)
       break
   }
 }
 
 watch(() => props.src, () => {
   if (ws) {
+    playbackRate.value = 1
+    ws.setPlaybackRate(1)
     ws.load(props.src)
     ws.once('ready', () => {
       ws?.setTime(0)
@@ -114,7 +120,7 @@ onBeforeUnmount(() => {
         </button>
         <button
           class="px-3 py-1.5 text-sm border rounded-md hover:bg-gray-50 transition-colors"
-          @click="cycleSpeed"
+          @click="cycleSpeed()"
         >
           {{ playbackRate }}x
         </button>

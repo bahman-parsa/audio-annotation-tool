@@ -11,6 +11,8 @@ const speeds = [0.5, 0.75, 1, 1.25, 1.5, 2]
 
 function setInstance(instance: WaveSurfer) {
   ws.value = instance
+  playbackRate.value = 1
+  instance.setPlaybackRate(1)
 
   instance.on('play', () => { isPlaying.value = true })
   instance.on('pause', () => { isPlaying.value = false })
@@ -37,9 +39,9 @@ function setSpeed(rate: number) {
   playbackRate.value = rate
   ws.value?.setPlaybackRate(rate)
 }
-function cycleSpeed() {
+function cycleSpeed(direction = 1) {
   const idx = speeds.indexOf(playbackRate.value)
-  const next = speeds[(idx + 1) % speeds.length]
+  const next = speeds[(idx + direction + speeds.length) % speeds.length]
   setSpeed(next)
 }
 function setVolume(vol: number) { ws.value?.setVolume(vol) }
