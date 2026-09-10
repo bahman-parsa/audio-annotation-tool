@@ -136,7 +136,7 @@ export class TranscriptAnnotator {
         const rendering = (ann.attributes.rendering as string) ?? 'digits';
         const value = ann.attributes.normalizedValue ?? '';
         parts.push(
-          `<span class="word word--number" data-id="${ann.id}" data-start="${token.start}" data-rendering="${escapeHtml(rendering)}" data-value="${escapeHtml(String(value))}">${escapeHtml(token.text)}</span>`,
+          `<span class="word word--number" data-id="${ann.id}" data-start="${token.start}" data-rendering="${escapeHtml(rendering)}" data-value="${escapeHtml(String(value))}"><span class="word--number-label">${escapeHtml(rendering)}</span> ${escapeHtml(token.text)}</span>`,
         );
       } else if (ann.type === 'MEDICAL_TERM') {
         const category = (ann.attributes.category as string) ?? '';

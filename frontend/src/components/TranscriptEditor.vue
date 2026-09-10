@@ -251,6 +251,16 @@ function handleOriginalClick(e: MouseEvent) {
   border-radius: 0.25rem;
 }
 
+:deep(.word--number-label) {
+  font-size: 0.7em;
+  font-weight: 600;
+  background: #bfdbfe;
+  color: #1d4ed8;
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.25rem;
+  margin-right: 0.25rem;
+}
+
 :deep(.word--medical) {
   background: #ede9fe;
   border-bottom: 2px solid #8b5cf6;

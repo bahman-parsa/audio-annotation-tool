@@ -207,7 +207,7 @@ function handleSave() {
             "
             @click="selectedType = 'spelled'"
           >
-            SPIELT
+            SPELL
           </button>
         </div>
 
