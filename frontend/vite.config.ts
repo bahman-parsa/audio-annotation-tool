@@ -3,6 +3,8 @@ import { defineConfig } from 'vite'
 import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 
+const apiTarget = process.env.API_URL || 'http://localhost:3000'
+
 export default defineConfig({
   plugins: [vue(), tailwindcss()],
   resolve: {
@@ -12,8 +14,8 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': 'http://localhost:3000',
-      '/uploads': 'http://localhost:3000',
+      '/api': apiTarget,
+      '/uploads': apiTarget,
     },
   },
 })
