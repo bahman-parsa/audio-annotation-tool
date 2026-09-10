@@ -48,6 +48,11 @@ onMounted(async () => {
 function selectQueueItem(id: string) {
   selectItem(id);
   const item = selectedItem.value;
+
+  annotator.value = null;
+  annotations.value = [];
+  wordTimings.value = [];
+
   if (item?.transcript) {
     annotator.value = new TranscriptAnnotator(
       item.transcript.originalLabel,
