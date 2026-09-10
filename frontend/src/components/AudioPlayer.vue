@@ -57,6 +57,9 @@ function handleKeyDown(e: KeyboardEvent) {
 watch(() => props.src, () => {
   if (ws) {
     ws.load(props.src)
+    ws.once('ready', () => {
+      ws?.setTime(0)
+    })
   }
 })
 

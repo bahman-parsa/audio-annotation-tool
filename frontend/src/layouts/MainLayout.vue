@@ -10,6 +10,7 @@ import AnnotationPopover from '@/components/AnnotationPopover.vue';
 import StatusModal from '@/components/StatusModal.vue';
 import { useWorkQueue } from '@/composables/useWorkQueue';
 import { useWordTimestamps } from '@/composables/useWordTimestamps';
+import { useAudioPlayer } from '@/composables/useAudioPlayer';
 import { TranscriptAnnotator } from '@/lib/transcript-annotator';
 import type { Annotation, AnnotationType, AudioItem } from '@/types';
 import { api } from '@/services/api';
@@ -17,6 +18,7 @@ import { api } from '@/services/api';
 const { filteredItems, selectedItem, selectedId, selectItem, setItems, updateItem } =
   useWorkQueue();
 const { estimate } = useWordTimestamps();
+const { seekTo } = useAudioPlayer();
 
 const showUploadModal = ref(false);
 const showAnnotationPopover = ref(false);
@@ -161,9 +163,11 @@ async function refreshItems() {
           <TranscriptEditor
             :original-text="selectedItem.transcript?.originalLabel ?? ''"
             :annotations="annotations"
+            :word-timings="wordTimings"
             @annotate="openAnnotationPopover"
             @delete-annotation="removeAnnotation"
             @save="handleSave"
+            @seek="seekTo"
           />
         </div>
         <div

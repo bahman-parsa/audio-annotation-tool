@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { TranscriptAnnotator } from '@/lib/transcript-annotator';
-import type { Annotation } from '@/types';
+import type { Annotation, WordTiming } from '@/types';
 
 const props = defineProps<{
   originalText: string;
   annotations: Annotation[];
+  wordTimings: WordTiming[];
 }>();
 
 const emit = defineEmits<{
   annotate: [data: { text: string; startOffset: number; endOffset: number }];
   'delete-annotation': [id: string];
   save: [];
+  seek: [time: number];
 }>();
 
 const originalPanel = ref<HTMLDivElement>();
@@ -80,6 +82,39 @@ function handleWordClick(e: MouseEvent) {
     emit('delete-annotation', id);
   }
 }
+
+const originalWordSpans = computed(() => {
+  const words = props.originalText.split(/(\s+)/);
+  let wordIndex = 0;
+  return words
+    .map((segment) => {
+      if (/^\s+$/.test(segment)) {
+        return `<span>${escapeHtml(segment)}</span>`;
+      }
+      const escaped = escapeHtml(segment);
+      const span = `<span class="word" data-word-index="${wordIndex}">${escaped}</span>`;
+      wordIndex++;
+      return span;
+    })
+    .join('');
+});
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function handleOriginalClick(e: MouseEvent) {
+  const target = e.target as HTMLElement;
+  if (!target.classList?.contains('word')) return;
+
+  const index = parseInt(target.getAttribute('data-word-index') ?? '-1', 10);
+  if (index < 0 || index >= props.wordTimings.length) return;
+
+  emit('seek', Math.max(0, props.wordTimings[index].startTime - 2));
+}
 </script>
 
 <template>
@@ -93,8 +128,17 @@ function handleWordClick(e: MouseEvent) {
         class="transcript-panel"
         @scroll="syncScroll('original')"
       >
-        <div class="panel-header">AI Original (Immutable)</div>
-        <div class="panel-content original-content">{{ originalText }}</div>
+        <div class="panel-header">
+          AI Original (Immutable)
+          <span class="font-normal text-xs ml-2 normal-case"
+            >click a word to seek audio</span
+          >
+        </div>
+        <div
+          class="panel-content original-content"
+          v-html="originalWordSpans"
+          @click="handleOriginalClick"
+        />
       </div>
       <div
         ref="correctedPanel"
@@ -160,7 +204,7 @@ function handleWordClick(e: MouseEvent) {
 .original-content {
   background: #f8fafc;
   color: #64748b;
-  cursor: default;
+  cursor: pointer;
 }
 
 .corrected-content {
