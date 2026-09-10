@@ -141,6 +141,20 @@ async function refreshItems() {
     // keep current items
   }
 }
+
+async function handleDistanceUpdate(value: number) {
+  if (!selectedItem.value) return;
+  try {
+    const result = await api.put<{ item: AudioItem }>(
+      `/api/items/${selectedItem.value.id}/distance-estimate`,
+      { distanceEstimate: value },
+    );
+    updateItem(result.item);
+  } catch (err) {
+    showStatus('Failed to update distance estimate.', true);
+    console.error('Distance update failed:', err);
+  }
+}
 </script>
 
 <template>
@@ -155,7 +169,7 @@ async function refreshItems() {
       />
       <main class="flex-1 overflow-y-auto p-6">
         <div v-if="selectedItem" class="max-w-6xl mx-auto space-y-4">
-          <RecordingMetadata :item="selectedItem" />
+          <RecordingMetadata :item="selectedItem" @update-distance="handleDistanceUpdate" />
           <AudioPlayer
             :src="`/uploads/${selectedItem.filename}`"
             @time-update="onTimeUpdate"

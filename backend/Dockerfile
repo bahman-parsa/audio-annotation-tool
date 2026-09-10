@@ -1,4 +1,5 @@
 FROM node:22-alpine
+RUN apk add --no-cache ffmpeg
 RUN corepack enable && corepack prepare yarn@4.12.0 --activate
 WORKDIR /app
 COPY package.json yarn.lock .yarnrc.yml ./

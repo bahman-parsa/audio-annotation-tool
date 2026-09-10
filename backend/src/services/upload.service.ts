@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma.js';
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { config } from '../config.js';
+import { computeDistanceEstimate } from '../lib/audio-analysis.js';
 
 const ALLOWED_EXTENSIONS = ['.wav', '.mp3', '.m4a'];
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
@@ -114,6 +115,8 @@ export async function processUnifiedUpload(
       const filePath = join(config.uploadDir, filename);
       await writeFile(filePath, file.buffer);
 
+      const distanceEstimate = await computeDistanceEstimate(file.buffer);
+
       const audioItem = await prisma.audioItem.create({
         data: {
           filename,
@@ -123,6 +126,7 @@ export async function processUnifiedUpload(
           sampleRate: meta.sampleRate,
           channels: meta.channels,
           bitDepth: meta.bitDepth,
+          distanceEstimate,
         },
       });
 

@@ -198,3 +198,33 @@ export async function deleteTranscript(audioItemId: string) {
     },
   });
 }
+
+export async function updateDistanceEstimate(
+  audioItemId: string,
+  distanceEstimate: number,
+) {
+  const audioItem = await prisma.audioItem.findUnique({
+    where: { id: audioItemId },
+  });
+
+  if (!audioItem) {
+    throw new Error('Audio item not found');
+  }
+
+  await prisma.audioItem.update({
+    where: { id: audioItemId },
+    data: {
+      distanceEstimate,
+      isConditionOverridden: true,
+    },
+  });
+
+  return prisma.audioItem.findUnique({
+    where: { id: audioItemId },
+    include: {
+      transcript: {
+        include: { annotations: true },
+      },
+    },
+  });
+}

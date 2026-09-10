@@ -114,6 +114,18 @@ PENDING → NEW → READY
 - **NEW** — transcript added, not yet annotated
 - **READY** — annotations saved, ready for export
 
+## Derived Values
+
+Two fields are computed automatically during upload and prefilled as suggestions. Annotators can override them; the override is what gets exported.
+
+### Distance Estimate
+
+- **Method:** RMS (Root Mean Square) signal level.
+- **Algorithm:** Decode audio → mono 16kHz float32 PCM → compute RMS → normalize to 0–1.
+- **Scale:** 0.0 = speaker far from microphone (quiet), 1.0 = speaker close to microphone (loud).
+- **Label:** Displayed as "Distance Est." in the UI. This is an _estimate_, not a physical distance measurement.
+- **Override:** Click the value in the Recording Metadata panel to edit. An orange dot indicates a manual override.
+
 ## API Endpoints
 
 | Method | Endpoint                            | Description                            |
@@ -123,6 +135,7 @@ PENDING → NEW → READY
 | PUT    | `/api/items/:id/transcript`         | Update corrected text and annotations  |
 | PUT    | `/api/items/:id/transcript/replace` | Replace entire transcript              |
 | DELETE | `/api/items/:id/transcript`         | Delete transcript                      |
+| PUT    | `/items/:id/distance-estimate`      | Update distance estimation             |
 | POST   | `/api/upload`                       | Upload audio files and transcript JSON |
 | GET    | `/api/export`                       | Export gold standard as JSONL          |
 | GET    | `/api/health`                       | Health check                           |

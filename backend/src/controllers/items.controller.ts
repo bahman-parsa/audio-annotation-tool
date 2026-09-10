@@ -6,6 +6,7 @@ import {
   updateTranscript,
   replaceTranscript,
   deleteTranscript,
+  updateDistanceEstimate,
 } from '../services/items.service.js';
 
 export async function getItems(_req: Request, res: Response): Promise<void> {
@@ -127,6 +128,32 @@ export async function deleteItemTranscript(
 
   try {
     const item = await deleteTranscript(id);
+    res.json({ item });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (message.includes('not found')) {
+      res.status(404).json({ error: message });
+    } else {
+      res.status(500).json({ error: message });
+    }
+  }
+}
+
+export async function updateItemDistanceEstimate(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const id = req.params.id as string;
+  const body = req.body as Record<string, unknown>;
+  const distanceEstimate = body.distanceEstimate;
+
+  if (typeof distanceEstimate !== 'number') {
+    res.status(400).json({ error: 'distanceEstimate must be a number' });
+    return;
+  }
+
+  try {
+    const item = await updateDistanceEstimate(id, distanceEstimate);
     res.json({ item });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
