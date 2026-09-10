@@ -136,6 +136,7 @@ function handleOriginalClick(e: MouseEvent) {
         </div>
         <div
           class="panel-content original-content"
+          :class="{ 'cursor-pointer': originalText.trim() }"
           v-html="originalWordSpans"
           @click="handleOriginalClick"
         />
@@ -154,7 +155,8 @@ function handleOriginalClick(e: MouseEvent) {
         />
         <div class="panel-footer">
           <button
-            class="px-4 py-1.5 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors cursor-pointer"
+            class="px-4 py-1.5 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="!originalText.trim()"
             @click="emit('save')"
           >
             Save &amp; Mark Ready
@@ -204,7 +206,7 @@ function handleOriginalClick(e: MouseEvent) {
 .original-content {
   background: #f8fafc;
   color: #64748b;
-  cursor: pointer;
+  cursor: default;
 }
 
 .corrected-content {
