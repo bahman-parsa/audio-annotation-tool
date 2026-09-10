@@ -13,8 +13,6 @@ interface ExportLine {
     text: string;
     startOffset: number;
     endOffset: number;
-    startTime: number;
-    endTime: number;
     type: string;
     attributes: Record<string, unknown>;
   }>;
@@ -59,8 +57,6 @@ export async function getExportLines(): Promise<ExportLine[]> {
       text: a.text,
       startOffset: a.startOffset,
       endOffset: a.endOffset,
-      startTime: a.startTime,
-      endTime: a.endTime,
       type: a.type,
       attributes: a.attributes as Record<string, unknown>,
     })),
