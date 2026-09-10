@@ -83,7 +83,6 @@ onMounted(() => {
     url: props.src,
   })
   setInstance(ws)
-  console.log(props.src)
   ws.on('timeupdate', (t) => emit('time-update', t))
   window.addEventListener('keydown', handleKeyDown)
 })
