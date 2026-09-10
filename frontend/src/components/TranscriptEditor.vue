@@ -340,4 +340,21 @@ function handleOriginalClick(e: MouseEvent) {
   background: #fbcfe8;
   color: #be185d;
 }
+
+:deep(.word--spelled) {
+  background: #fef3c7;
+  border-bottom: 2px solid #f59e0b;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+}
+
+:deep(.word--spelled-resolved) {
+  font-size: 0.7em;
+  font-weight: 600;
+  background: #fde68a;
+  color: #92400e;
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.25rem;
+  margin-right: 0.25rem;
+}
 </style>

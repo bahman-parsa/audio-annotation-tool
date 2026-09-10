@@ -1,6 +1,6 @@
 export type Status = 'PENDING' | 'NEW' | 'READY';
 
-export type AnnotationType = 'CRUD' | 'NUMBER' | 'MEDICAL_TERM' | 'MEASUREMENT' | 'NAMED_ENTITY';
+export type AnnotationType = 'CRUD' | 'NUMBER' | 'MEDICAL_TERM' | 'MEASUREMENT' | 'NAMED_ENTITY' | 'SPELLED_OUT';
 
 export type { Annotation } from '@/lib/transcript-annotator'
 
