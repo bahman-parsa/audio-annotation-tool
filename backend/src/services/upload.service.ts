@@ -1,7 +1,7 @@
 import { parseBuffer } from 'music-metadata';
 import { prisma } from '../lib/prisma.js';
 import { writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, basename } from 'node:path';
 import { config } from '../config.js';
 import { computeDistanceEstimate } from '../lib/audio-analysis.js';
 
@@ -97,7 +97,7 @@ export async function processUnifiedUpload(
       continue;
     }
 
-    const filename = file.originalname;
+    const filename = basename(file.originalname);
 
     if (await checkDuplicate(filename)) {
       errors.push(`${filename}: duplicate file`);
