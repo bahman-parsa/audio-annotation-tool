@@ -267,4 +267,21 @@ function handleOriginalClick(e: MouseEvent) {
   border-radius: 0.25rem;
   margin-right: 0.25rem;
 }
+
+:deep(.word--measurement) {
+  background: #ccfbf1;
+  border-bottom: 2px solid #14b8a6;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+}
+
+:deep(.word--measurement-label) {
+  font-size: 0.7em;
+  font-weight: 600;
+  background: #99f6e4;
+  color: #0d9488;
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.25rem;
+  margin-right: 0.25rem;
+}
 </style>

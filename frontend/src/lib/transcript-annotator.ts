@@ -7,7 +7,7 @@ export interface Annotation {
   startTime: number;
   endTime: number;
   text: string;
-  type: 'CRUD' | 'NUMBER' | 'MEDICAL_TERM';
+  type: 'CRUD' | 'NUMBER' | 'MEDICAL_TERM' | 'MEASUREMENT';
   attributes: Record<string, unknown>;
 }
 
@@ -142,6 +142,13 @@ export class TranscriptAnnotator {
         const category = (ann.attributes.category as string) ?? '';
         parts.push(
           `<span class="word word--medical" data-id="${ann.id}" data-start="${token.start}" data-category="${escapeHtml(category)}"><span class="word--medical-label">${escapeHtml(category)}</span> ${escapeHtml(token.text)}</span>`,
+        );
+      } else if (ann.type === 'MEASUREMENT') {
+        const value = ann.attributes.value ?? '';
+        const unit = (ann.attributes.unit as string) ?? '';
+        const label = `${value} ${unit}`;
+        parts.push(
+          `<span class="word word--measurement" data-id="${ann.id}" data-start="${token.start}" data-value="${escapeHtml(String(value))}" data-unit="${escapeHtml(unit)}"><span class="word--measurement-label">${escapeHtml(label)}</span> ${escapeHtml(token.text)}</span>`,
         );
       } else if (ann.type === 'CRUD' && ann.attributes.mode === 'delete') {
         parts.push(

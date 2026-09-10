@@ -13,7 +13,7 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const selectedType = ref<'number' | 'crud' | 'medical'>('number')
+const selectedType = ref<'number' | 'crud' | 'medical' | 'measurement'>('number')
 
 // NUMBER fields
 const rendering = ref<'digits' | 'words'>('digits')
@@ -35,6 +35,25 @@ const medicalCategories = [
   { value: 'device', label: 'Device' },
 ]
 
+// MEASUREMENT fields
+const measurementValue = ref<number | null>(null)
+const measurementUnit = ref<string>('mg')
+const measurementNormalized = ref<number | null>(null)
+
+const measurementUnits = [
+  { value: 'g', label: 'g (gram)' },
+  { value: 'mg', label: 'mg (milligram)' },
+  { value: 'ug', label: 'ug (microgram)' },
+  { value: 'kg', label: 'kg (kilogram)' },
+  { value: 'ml', label: 'ml (milliliter)' },
+  { value: 'l', label: 'l (liter)' },
+  { value: 'mmHg', label: 'mmHg (millimeters of mercury)' },
+  { value: 'IE', label: 'IE (international units)' },
+  { value: 'mm', label: 'mm (millimeter)' },
+  { value: 'cm', label: 'cm (centimeter)' },
+  { value: 'Ch', label: 'Ch (charriere)' },
+]
+
 function handleSave() {
   if (selectedType.value === 'number') {
     const val = rendering.value === 'digits'
@@ -49,6 +68,16 @@ function handleSave() {
     emit('save', {
       type: 'MEDICAL_TERM',
       attributes: { category: medicalCategory.value, note: medicalNote.value.trim() },
+    })
+  } else if (selectedType.value === 'measurement') {
+    if (measurementValue.value === null || isNaN(measurementValue.value)) return
+    emit('save', {
+      type: 'MEASUREMENT',
+      attributes: {
+        value: measurementValue.value,
+        unit: measurementUnit.value,
+        normalizedValue: measurementNormalized.value ?? measurementValue.value,
+      },
     })
   } else {
     if (crudMode.value === 'delete') {
@@ -91,6 +120,11 @@ function handleSave() {
             :class="selectedType === 'medical' ? 'bg-violet-500 text-white border-violet-500' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'"
             @click="selectedType = 'medical'"
           >MEDICAL</button>
+          <button
+            class="flex-1 px-3 py-2 text-sm rounded-md border transition-colors"
+            :class="selectedType === 'measurement' ? 'bg-teal-500 text-white border-teal-500' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'"
+            @click="selectedType = 'measurement'"
+          >MEASURE</button>
         </div>
 
         <template v-if="selectedType === 'number'">
@@ -143,6 +177,23 @@ function handleSave() {
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Note (optional)</label>
             <input v-model="medicalNote" class="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-violet-500" placeholder="Additional context..." />
+          </div>
+        </template>
+
+        <template v-if="selectedType === 'measurement'">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Value</label>
+            <input v-model.number="measurementValue" type="number" class="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="e.g. 1500" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Unit</label>
+            <select v-model="measurementUnit" class="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+              <option v-for="u in measurementUnits" :key="u.value" :value="u.value">{{ u.label }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Normalized Value (optional)</label>
+            <input v-model.number="measurementNormalized" type="number" class="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="e.g. 1.5" />
           </div>
         </template>
 
